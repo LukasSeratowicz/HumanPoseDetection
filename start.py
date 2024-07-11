@@ -1,3 +1,4 @@
+import threading
 import gradio as gr
 import numpy as np
 from ultralytics import YOLO
@@ -90,13 +91,22 @@ def yolov8_load_model(model_name):
     if preload_weights:
        load_weights()
     print(f"Model Loaded")
+    print(f"Checking parameters")
+    model_info = torch.load("models//"+model_name, map_location=torch.device('cpu'))
+    total_params = sum(p.numel() for p in model.parameters())
+    formatted_params = '{:,}'.format(total_params).replace(',', '.')
+    file_size = os.path.getsize("models//"+model_name) / (1024 * 1024)
+    model_info = None
     gr.Info(f"Model: {model_name} loaded successfuly", duration=3)
+    return f"Model: {model_name}\nSize: {file_size:.2f} MB\nParameters: {formatted_params}"
 
 def load_weights():
     global model
     img = "soldiers.png"
     results = model(source=img, show=False, conf=0.3, save=False)
 
+
+### IMG TO IMG
 def yolov8_process_image(img):
     timer_start = time.perf_counter()
     global model
@@ -141,6 +151,8 @@ def yolov8_process_image(img):
     return f"OK.\nPeople Count: {people_count}\nIt took {timer_end-timer_start:0.4f} seconds", image
 
 
+### VID TO VID
+
 
 ### GRADIO
 tabs = ["img2img", "vid2vid", "webcam", "settings"]
@@ -149,9 +161,11 @@ with gr.Blocks(css="footer {visibility: hidden}") as demo:
     #github_icon = gr.Gallery(values=["logo\\github-mark-white.png"], interactive=False) # I have no idea how Gradio can display logos o.O
     #
     title_box = gr.Textbox(label="Human Pose Detection",value=f"Running on {device}\nUsing OpenCV v{cv.__version__} "+(f" with cuda v{torch.version.cuda}" if device == 'cuda' else "without cuda"))
-    version_selection = gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model")
-    load_btn = gr.Button(value="Load Model")
-    load_btn.click(yolov8_load_model,inputs=[version_selection],outputs=[])
+    model_load_logs = gr.Textbox(label="Model Info",value=f"No Model Loaded")
+    with gr.Row():
+        version_selection = gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model")
+        load_btn = gr.Button(value="Load Model")
+        load_btn.click(yolov8_load_model, inputs=[version_selection], outputs=[model_load_logs])
 
     ### Image To Image
     with gr.Tab(tabs[0]):
@@ -176,8 +190,9 @@ with gr.Blocks(css="footer {visibility: hidden}") as demo:
     
     ### Settings
     with gr.Tab(tabs[3]):
-        picker_keypoints_color = gr.ColorPicker(label="Keypoints Color", value="#00FF00")
-        picker_lines_color = gr.ColorPicker(label="Lines Color", value="#0000FF")
+        with gr.Row():
+            picker_keypoints_color = gr.ColorPicker(label="Keypoints Color", value="#00FF00")
+            picker_lines_color = gr.ColorPicker(label="Lines Color", value="#0000FF")
         settings_preload_weights = gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights)
         settings_btn = gr.Button(value="Save Changes")
         out_text = gr.Text(value=" ", label="Output Logs")
