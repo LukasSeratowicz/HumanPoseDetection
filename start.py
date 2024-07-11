@@ -122,23 +122,13 @@ def yolov8_process_image(img):
 
     image = img
     
-    width, height = image.shape[:2]
-    print(f"Image width: {width}, Image height: {height}")
-
-    output_size_x = 500
-    output_size_y = 500
-    scale_factor = 1
-    if image.shape[1] > output_size_x or image.shape[0] > output_size_y:
-        scale_factor = min(output_size_x / image.shape[1], output_size_y / image.shape[0])
-        image = cv.resize(image, None, fx=scale_factor, fy=scale_factor, interpolation=cv.INTER_LINEAR)
-
     people_count = len(results[0].keypoints.xy)
     for person_idx in range(people_count):
         keypoints = results[0].keypoints.xy[person_idx]
-        keypoints_scaled = [(int(x * scale_factor), int(y * scale_factor)) for x, y in keypoints]
-        for x_scaled, y_scaled in keypoints_scaled:
-            if x_scaled != 0 and y_scaled != 0:
-                cv.circle(image, (x_scaled, y_scaled), int(keypoints_size), (keypoints_color.r, keypoints_color.g, keypoints_color.b), int(keypoints_size/2))
+        keypoints_scaled = [(int(x), int(y)) for x, y in keypoints]
+        for x, y in keypoints_scaled:
+            if x != 0 and y != 0:
+                cv.circle(image, (x, y), int(keypoints_size), (keypoints_color.r, keypoints_color.g, keypoints_color.b), int(keypoints_size/2))
         for (start_idx, end_idx) in KEYPOINT_PAIRS:
             if start_idx < len(keypoints_scaled) and end_idx < len(keypoints_scaled):
                 start_point = keypoints_scaled[start_idx]
@@ -152,6 +142,12 @@ def yolov8_process_image(img):
 
 
 ### VID TO VID
+def yolov8_process_video(video):
+    return "NOT OK"
+
+### WEBCAM
+def yolov8_process_webcam(feed):
+    return "NOT OK"
 
 
 ### GRADIO
@@ -172,7 +168,7 @@ with gr.Blocks(css="footer {visibility: hidden}") as demo:
         tab_name = gr.Text(value=tabs[0], visible=False)
         image = gr.Image(label="Image")
         process_btn = gr.Button(value="Process Image")
-        out_text = gr.Text(value="process image to get output", label="Output Logs")
+        out_text = gr.Text(value="process image to get an output", label="Output Logs")
         out_image = gr.Image(label="Output Image")
         process_btn.click(yolov8_process_image,inputs=[image],outputs=[out_text, out_image])
 
@@ -180,13 +176,17 @@ with gr.Blocks(css="footer {visibility: hidden}") as demo:
     with gr.Tab(tabs[1]):
         tab_name = gr.Text(value=tabs[1], visible=False)
         video = gr.Video(label="Video") #, sources=['upload']
+        video_out_text = gr.Text(value="process video to get an output", label="Output Logs")
         video_btn = gr.Button(value="Process Video")
+        video_btn.click(yolov8_process_video,inputs=[video],outputs=[video_out_text])
 
     ### Webcam Live
     with gr.Tab(tabs[2]):
         tab_name = gr.Text(value=tabs[2], visible=False)
         webcam = gr.Video(label="Webcam", sources=['webcam']) #PLACEHOLDER #streaming=True
+        webcam_out_text = gr.Text(value="process webcam to get an output", label="Output Logs")
         webcam_btn = gr.Button(value="Process Webcam")
+        webcam_btn.click(yolov8_process_webcam,inputs=[webcam],outputs=[webcam_out_text])
     
     ### Settings
     with gr.Tab(tabs[3]):
