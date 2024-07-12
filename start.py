@@ -1,4 +1,3 @@
-import threading
 import gradio as gr
 import numpy as np
 from ultralytics import YOLO
@@ -8,18 +7,28 @@ import os
 import glob
 from PIL import Image
 import time
+import json
 
-# Settings
+# Settings Non Editable
+page_title = "HumanPoseDetection - Seratowicz"
+# Settings Editable
 class Color:
-    r = 0
-    g = 0
-    b = 0
-keypoints_color = Color()
-keypoints_color.g = 255
-keypoints_size = int(4)
-line_color = Color()
-line_color.b = 255
-line_size = int(2)
+    def __init__(self, r=0, g=0, b=0):
+        self.r = r
+        self.g = g
+        self.b = b
+
+    def to_dict(self):
+        return {'r': self.r, 'g': self.g, 'b': self.b}
+    
+    @staticmethod
+    def from_dict(data):
+        return Color(r=data.get('r', 0), g=data.get('g', 0), b=data.get('b', 0))
+
+keypoints_color = Color(r=0, g=255, b=0)
+line_color = Color(r=0, g=0, b=255)
+keypoints_size = 2
+line_size = 4
 
 preload_weights = True
 
@@ -36,9 +45,35 @@ def hex_to_rgb(hex_color):
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
 
+settings_loaded = False
+settings_folder = os.path.dirname(os.path.abspath(__file__))
+settings_file_name = "config.json"
 
+def save_settings():
+    global settings_folder
+    global settings_file_name
+    settings = {
+        'keypoints_color': keypoints_color.to_dict(),
+        'keypoints_size': keypoints_size,
+        'line_color': line_color.to_dict(),
+        'line_size': line_size,
+        'preload_weights': preload_weights
+    }
+    
+    if not settings_folder:
+        settings_folder = os.path.dirname(os.path.abspath(__file__)) 
+    
+    settings_file_path = os.path.join(settings_folder, settings_file_name)
+    
+    os.makedirs(settings_folder, exist_ok=True)
+    
+    with open(settings_file_path, 'w') as file:
+        json.dump(settings, file, indent=4)
 
-def apply_settings(new_keypoints_color, new_line_color, new_preload_weights):
+def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new_keypoints_size, new_line_size):
+    global preload_weights
+    global keypoints_size
+    global line_size
     k_r, k_g, k_b = hex_to_rgb(new_keypoints_color)
     keypoints_color.r = k_r
     keypoints_color.g = k_g
@@ -49,11 +84,50 @@ def apply_settings(new_keypoints_color, new_line_color, new_preload_weights):
     line_color.g = l_g
     line_color.b = l_b
 
-    global preload_weights
     preload_weights = new_preload_weights
+
+    keypoints_size = new_keypoints_size
+    line_size = new_line_size
+
+    save_settings()
 
     gr.Info("Settings Changed Successfully",duration=3)
     return "Settings Changed"
+
+def load_settings():
+    global settings_loaded
+    global keypoints_color
+    global keypoints_size
+    global line_color
+    global line_size
+    global preload_weights
+    settings_file_path = os.path.join(settings_folder, settings_file_name)
+    
+    if not os.path.isfile(settings_file_path):
+        save_settings()
+        
+        settings_loaded = False
+        return False, "No settings file found. A new settings file has been created."
+    
+    with open(settings_file_path, 'r') as file:
+        settings = json.load(file)
+        
+        keypoints_color = Color.from_dict(settings.get('keypoints_color', {}))
+        keypoints_size = settings.get('keypoints_size', 4)
+        line_color = Color.from_dict(settings.get('line_color', {}))
+        line_size = settings.get('line_size', 2)
+        preload_weights = settings.get('preload_weights', True)
+
+        print(picker_keypoints_color.value)
+        picker_keypoints_color.value = f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"
+        print(picker_keypoints_color.value)
+        picker_lines_color.value = f"#{line_color.r:02x}{line_color.g:02x}{line_color.b:02x}"
+        settings_preload_weights.value = preload_weights
+        slider_keypoints_size.value = keypoints_size
+        slider_lines_size.value = line_size
+
+    settings_loaded = True
+    return True, "Settings file loaded successfully.", keypoints_color, line_color, preload_weights
 
 # Check if running on CPU or GPU
 device = 'cuda' if torch.cuda.is_available() else 'CPU'
@@ -149,10 +223,13 @@ def yolov8_process_video(video):
 def yolov8_process_webcam(feed):
     return "NOT OK"
 
-
+def test_selection():
+    print("Tab Selected")
+    status = load_settings()
+    print(status)
 ### GRADIO
 tabs = ["img2img", "vid2vid", "webcam", "settings"]
-with gr.Blocks(css="footer {visibility: hidden}") as demo:
+with gr.Blocks(css="footer {visibility: hidden}", title=page_title) as demo:
     # Github icon
     #github_icon = gr.Gallery(values=["logo\\github-mark-white.png"], interactive=False) # I have no idea how Gradio can display logos o.O
     #
@@ -189,16 +266,24 @@ with gr.Blocks(css="footer {visibility: hidden}") as demo:
         webcam_btn.click(yolov8_process_webcam,inputs=[webcam],outputs=[webcam_out_text])
     
     ### Settings
-    with gr.Tab(tabs[3]):
+    with gr.Tab(tabs[3]) as settings_tab:
         with gr.Row():
-            picker_keypoints_color = gr.ColorPicker(label="Keypoints Color", value="#00FF00")
-            picker_lines_color = gr.ColorPicker(label="Lines Color", value="#0000FF")
+            with gr.Column():
+                picker_keypoints_color = gr.ColorPicker(label="Keypoints Color", value="#00FF00")
+                slider_keypoints_size = gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size")
+            with gr.Column():
+                picker_lines_color = gr.ColorPicker(label="Lines Color", value="#0000FF")
+                slider_lines_size = gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size")
         settings_preload_weights = gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights)
         settings_btn = gr.Button(value="Save Changes")
         out_text = gr.Text(value=" ", label="Output Logs")
-        settings_btn.click(apply_settings,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights],outputs=[out_text])
-
-
+        settings_btn.click(apply_settings,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size],outputs=[out_text])
+        #demo.load(load_settings, inputs=[], outputs=[out_text])
+        settings_tab.select(test_selection)
         #gr.themes.builder() #BROKEN
+    #demo.Interface.tabs[-1].selected = load_settings
+    #settings_tab.
 if __name__ == "__main__":
+    status = load_settings()
+    print(status)
     demo.launch(show_api=False)
