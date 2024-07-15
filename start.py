@@ -232,7 +232,7 @@ def yolov8_process_webcam(feed):
 
 ### GRADIO
 tabs = ["img2img", "vid2vid", "webcam", "settings"]
-with gr.Blocks(css="footer {visibility: hidden}", title=page_title) as demo:
+with gr.Blocks(title=page_title) as demo:
     # Github icon
     #github_icon = gr.Gallery(values=["logo\\github-mark-white.png"], interactive=False) # I have no idea how Gradio can display logos o.O
     #
