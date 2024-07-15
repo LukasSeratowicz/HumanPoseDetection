@@ -11,6 +11,11 @@ import json
 
 # Settings Non Editable
 page_title = "HumanPoseDetection - Seratowicz"
+settings_loaded = False
+settings_folder = os.path.dirname(os.path.abspath(__file__))
+settings_file_name = "config.json"
+session_folder = os.path.dirname(os.path.abspath(__file__))
+session_file_name = "session.json"
 webcam_on = False
 refresh_symbol = '\U0001f504'  # 🔄
 # Settings Editable
@@ -48,10 +53,6 @@ def change_line_color(red,green,blue):
 def hex_to_rgb(hex_color):
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
-
-settings_loaded = False
-settings_folder = os.path.dirname(os.path.abspath(__file__))
-settings_file_name = "config.json"
 
 def save_settings():
     global settings_folder
@@ -128,14 +129,6 @@ def load_settings():
         preload_weights = settings.get('preload_weights', True)
         confidence = settings.get('confidence', 0.3)
 
-        # print(picker_keypoints_color.value)
-        # picker_keypoints_color.value = f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"
-        # print(picker_keypoints_color.value)
-        # picker_lines_color.value = f"#{line_color.r:02x}{line_color.g:02x}{line_color.b:02x}"
-        # settings_preload_weights.value = preload_weights
-        # slider_keypoints_size.value = keypoints_size
-        # slider_lines_size.value = line_size
-
     settings_loaded = True
     return True, "Settings file loaded successfully.", keypoints_color, keypoints_size, line_color, line_size, preload_weights, confidence
 
@@ -145,7 +138,73 @@ def reload_gradio_from_settings():
     #print(status)
     return gr.ColorPicker(value=f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"), gr.ColorPicker(value=f"#{line_color.r:02x}{line_color.g:02x}{line_color.b:02x}"),gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size"), gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size"), gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights), gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence")
 
+# SESSION
+first_time = True
+session_model_name = None
+session_model_load_logs = None
 
+def save_session():
+    global session_folder
+    global session_file_name
+    global session_model_name
+    global session_model_load_logs
+    session = {
+        'session_model_name': session_model_name,
+        'session_model_load_logs': session_model_load_logs
+    }
+    
+    if not session_folder:
+        session_folder = os.path.dirname(os.path.abspath(__file__)) 
+    
+    session_file_name = os.path.join(session_folder, session_file_name)
+    
+    os.makedirs(session_folder, exist_ok=True)
+    
+    with open(session_file_name, 'w') as file:
+        json.dump(session, file, indent=4)
+    print("Successfuly saved session")
+
+
+def load_session():
+    global session_model_name
+    global session_model_load_logs
+    global session_folder
+    global session_file_name
+
+    session_file_path = os.path.join(session_folder, session_file_name)
+    if not os.path.isfile(session_file_path):
+        save_session()
+        return None, "No Model Loaded"
+    
+    with open(session_file_path, 'r') as file:
+        session = json.load(file)
+        #print(session)
+        session_model_name = session.get('session_model_name', None)
+        session_model_load_logs = session.get('session_model_load_logs', "No Model Loaded")
+
+
+def on_page_load():
+    global session_model_name
+    global session_model_load_logs
+    global session_folder
+    global session_file_name
+    global first_time
+    #print("Page Reloaded")
+    if first_time:
+        session_model_name = None
+        session_model_load_logs = "No Model Loaded"
+        file_path = os.path.join(session_folder, session_file_name)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        first_time = False
+    else:
+        load_session()
+        #print(f"loaded: {session_model_name} and {session_model_load_logs}")
+    #status = load_settings()
+    if session_model_load_logs == None or session_model_load_logs == "":
+        session_model_load_logs = "No Model Loaded"
+    return gr.Textbox(label="Model Info",value=session_model_load_logs), gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model", value=session_model_name)
+    
 # Check if running on CPU or GPU
 device = 'cuda' if torch.cuda.is_available() else 'CPU'
 print(f"Running on {device}")
@@ -179,6 +238,8 @@ KEYPOINT_PAIRS = [
 ]
 
 def yolov8_load_model(model_name):
+    global session_model_name
+    global session_model_load_logs
     if model_name is None or model_name == "":
         raise gr.Error(f"FAILED Loading Model: {model_name}", duration=5)
     global model
@@ -193,6 +254,9 @@ def yolov8_load_model(model_name):
     formatted_params = '{:,}'.format(total_params).replace(',', '.')
     file_size = os.path.getsize("models//"+model_name) / (1024 * 1024)
     model_info = None
+    session_model_name = model_name
+    session_model_load_logs = f"Model: {model_name}\nSize: {file_size:.2f} MB\nParameters: {formatted_params}"
+    save_session()
     gr.Info(f"Model: {model_name} loaded successfuly", duration=3)
     return f"Model: {model_name}\nSize: {file_size:.2f} MB\nParameters: {formatted_params}"
 
@@ -284,7 +348,6 @@ def yolov8_process_webcam_stop():
 
 # TESTS GO HERE
 
-    
 ### GRADIO
 tabs = ["img2img", "vid2vid", "webcam", "settings"]
 with gr.Blocks(title=page_title) as demo:
@@ -349,6 +412,7 @@ with gr.Blocks(title=page_title) as demo:
         #gr.themes.builder() #BROKEN
     #demo.Interface.tabs[-1].selected = load_settings
     #settings_tab.
+    demo.load(on_page_load, inputs=[], outputs=[model_load_logs, version_selection])
 if __name__ == "__main__":
     status = load_settings()
     print(status)
