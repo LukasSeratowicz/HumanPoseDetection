@@ -346,11 +346,18 @@ def yolov8_process_webcam_stop():
     global webcam_on
     webcam_on = False
 
+# CSS HERE
+css = """
+#small-button {
+    flex: 0 1 0% !important;
+    font-size: 24px !important;
+    min-width: min(45px, 100%) !important;
+}
+"""
 # TESTS GO HERE
-
 ### GRADIO
 tabs = ["img2img", "vid2vid", "webcam", "settings"]
-with gr.Blocks(title=page_title) as demo:
+with gr.Blocks(title=page_title, css=css) as demo:
     # Github icon
     #github_icon = gr.Gallery(values=["logo\\github-mark-white.png"], interactive=False) # I have no idea how Gradio can display logos o.O
     #
@@ -360,7 +367,7 @@ with gr.Blocks(title=page_title) as demo:
         with gr.Column():
              with gr.Row():
                 version_selection = gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model")
-                reload_btn = gr.Button(value=refresh_symbol, scale=0.05)
+                reload_btn = gr.Button(value=refresh_symbol, elem_id="small-button")
         load_btn = gr.Button(value="Load Model")
 
         reload_btn.click(reload_models, inputs=[], outputs=[version_selection])
@@ -373,7 +380,8 @@ with gr.Blocks(title=page_title) as demo:
         process_btn = gr.Button(value="Process Image")
         out_text = gr.Text(value="process image to get an output", label="Output Logs")
         out_image = gr.Image(label="Output Image")
-        process_btn.click(yolov8_process_image,inputs=[image],outputs=[out_text, out_image])
+        work_around_false = gr.Checkbox(label="If you see this, there is something wrong !", value=False, visible=False, render=False)
+        process_btn.click(yolov8_process_image,inputs=[image, work_around_false],outputs=[out_text, out_image])
 
     ### Video To Video
     with gr.Tab(tabs[1]):
