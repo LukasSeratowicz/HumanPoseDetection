@@ -12,6 +12,7 @@ import json
 # Settings Non Editable
 page_title = "HumanPoseDetection - Seratowicz"
 webcam_on = False
+refresh_symbol = '\U0001f504'  # 🔄
 # Settings Editable
 class Color:
     def __init__(self, r=0, g=0, b=0):
@@ -160,6 +161,11 @@ def find_pt_files(file_path):
 all_models = find_pt_files(os.path.dirname(os.path.realpath(__file__))+"\\models")
 print(all_models)
 
+def reload_models():
+    global all_models
+    all_models = find_pt_files(os.path.dirname(os.path.realpath(__file__))+"\\models")
+    return gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model")
+
 ### Pose Estimation AI
 file_path = os.path.dirname(os.path.realpath(__file__))
 model = None
@@ -275,10 +281,10 @@ def yolov8_process_webcam():
 def yolov8_process_webcam_stop():
     global webcam_on
     webcam_on = False
+
 # TESTS GO HERE
 
-
-
+    
 ### GRADIO
 tabs = ["img2img", "vid2vid", "webcam", "settings"]
 with gr.Blocks(title=page_title) as demo:
@@ -288,8 +294,13 @@ with gr.Blocks(title=page_title) as demo:
     title_box = gr.Textbox(label="Human Pose Detection",value=f"Running on {device}\nUsing OpenCV v{cv.__version__} "+(f" with cuda v{torch.version.cuda}" if device == 'cuda' else "without cuda"))
     model_load_logs = gr.Textbox(label="Model Info",value=f"No Model Loaded")
     with gr.Row():
-        version_selection = gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model")
+        with gr.Column():
+             with gr.Row():
+                version_selection = gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model")
+                reload_btn = gr.Button(value=refresh_symbol, scale=0.05)
         load_btn = gr.Button(value="Load Model")
+
+        reload_btn.click(reload_models, inputs=[], outputs=[version_selection])
         load_btn.click(yolov8_load_model, inputs=[version_selection], outputs=[model_load_logs])
 
     ### Image To Image
