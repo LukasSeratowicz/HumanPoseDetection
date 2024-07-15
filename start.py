@@ -11,6 +11,7 @@ import json
 
 # Settings Non Editable
 page_title = "HumanPoseDetection - Seratowicz"
+webcam_on = False
 # Settings Editable
 class Color:
     def __init__(self, r=0, g=0, b=0):
@@ -196,7 +197,7 @@ def load_weights():
 
 
 ### IMG TO IMG
-def yolov8_process_image(img):
+def yolov8_process_image(img, print_info):
     timer_start = time.perf_counter()
     global model
     if img is None:
@@ -233,7 +234,8 @@ def yolov8_process_image(img):
                     cv.line(image, start_point, end_point, (line_color.r, line_color.g, line_color.b), int(line_size))
 
     timer_end = time.perf_counter()
-    gr.Info(f"Processing Finished\nafter {timer_end-timer_start:0.4f} seconds", duration=5)
+    if print_info == True:
+        gr.Info(f"Processing Finished\nafter {timer_end-timer_start:0.4f} seconds", duration=5)
     return f"OK.\nPeople Count: {people_count}\nIt took {timer_end-timer_start:0.4f} seconds", image
 
 
@@ -243,6 +245,8 @@ def yolov8_process_video(video):
 
 ### WEBCAM
 def yolov8_process_webcam():
+    global webcam_on
+    webcam_on = True
     camera_id = 0
     print(f"Turning on camera id: {camera_id}")
     cap = cv.VideoCapture(camera_id)
@@ -253,19 +257,24 @@ def yolov8_process_webcam():
     frame_height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
 
     #print(f"width:{frame_width} | height:{frame_height}")
+    processed_image = None
+    while webcam_on:
+        ret, frame = cap.read()
 
-    ret, frame = cap.read()
+        # if frame is read correctly ret is True
+        if not ret:
+            gr.Error("Can't receive frame (stream end?). Exiting ...")
 
-    # if frame is read correctly ret is True
-    if not ret:
-        gr.Error("Can't receive frame (stream end?). Exiting ...")
+        #return "TESTING", frame
 
-    #return "TESTING", frame
-
-    status, processed_image = yolov8_process_image(frame)
+        status, processed_image = yolov8_process_image(frame, print_info=False)
+        yield status, processed_image
     
-    return status, processed_image
+    return "Finished Campturing Webcam", processed_image
 
+def yolov8_process_webcam_stop():
+    global webcam_on
+    webcam_on = False
 # TESTS GO HERE
 
 
@@ -302,12 +311,13 @@ with gr.Blocks(title=page_title) as demo:
 
     ### Webcam Live
     with gr.Tab(tabs[2]) as webcam_tab:
-        tab_name = gr.Text(value=tabs[2], visible=False)
-        #webcam = gr.Video(label="Webcam", sources=['webcam']) #PLACEHOLDER #streaming=True
         webcam_out_text = gr.Text(value="process webcam to get an output", label="Output Logs")
         webcam_out_img = gr.Image(value="process webcam to get an output", label="Output Image")
-        webcam_btn = gr.Button(value="Process Webcam")
-        webcam_btn.click(yolov8_process_webcam,inputs=[],outputs=[webcam_out_text, webcam_out_img])
+        webcam_btn_start = gr.Button(value="Start")
+        webcam_btn_stop = gr.Button(value="Stop")
+
+        webcam_btn_start.click(yolov8_process_webcam, inputs=[], outputs=[webcam_out_text, webcam_out_img]) 
+        webcam_btn_stop.click(yolov8_process_webcam_stop, inputs=[], outputs=[]) 
 
     ### Settings
     with gr.Tab(tabs[3]) as settings_tab:
