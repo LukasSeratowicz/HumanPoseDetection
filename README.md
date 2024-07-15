@@ -16,9 +16,9 @@ Feel Free to follow for any updates!
 Project Status:
 - Image To Image <- Basic Functionality Implemented
 - Video To Video <- Not Implemented
-- Webcam         <- Not Implemented
+- Webcam         <- Placeholder Snapshot Implemented
 - Settings       <- Implemented
 
 Known Issues:
-- There are no checks for model not loaded (crashes when trying to process image without a model loaded)
-- Settings are working and are being loaded from config file, but there is a bug that does not update the color picker or checkbox look on the website (currently talking to devs)
+- Gradio has trouble processing live webcam footage, might have to add a seperate button that will make a new window using openCV
+- Settings Tab loads settings from config file each time tab is opened instead of on page load (will fix that much later on)
