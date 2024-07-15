@@ -201,6 +201,8 @@ def yolov8_process_image(img):
     global model
     if img is None:
         raise gr.Error("No selected image found, please upload an image first 💥!", duration=5)
+    if model is None:
+        raise gr.Error("Please select and load model first 💥!", duration=5)
     results = model(source=img, show=False, conf=confidence, save=False)
     print(results) # DELETE LATER
     if isinstance(img, Image.Image):
