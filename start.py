@@ -32,6 +32,8 @@ line_size = 4
 
 preload_weights = True
 
+confidence = 0.3
+
 def change_keypoints_color(red,green,blue):
     keypoints_color.r = red
     keypoints_color.g = green
@@ -57,7 +59,8 @@ def save_settings():
         'keypoints_size': keypoints_size,
         'line_color': line_color.to_dict(),
         'line_size': line_size,
-        'preload_weights': preload_weights
+        'preload_weights': preload_weights,
+        'confidence': confidence
     }
     
     if not settings_folder:
@@ -70,10 +73,11 @@ def save_settings():
     with open(settings_file_path, 'w') as file:
         json.dump(settings, file, indent=4)
 
-def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new_keypoints_size, new_line_size):
+def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new_keypoints_size, new_line_size, new_confidence):
     global preload_weights
     global keypoints_size
     global line_size
+    global confidence
     k_r, k_g, k_b = hex_to_rgb(new_keypoints_color)
     keypoints_color.r = k_r
     keypoints_color.g = k_g
@@ -89,6 +93,8 @@ def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new
     keypoints_size = new_keypoints_size
     line_size = new_line_size
 
+    confidence = new_confidence
+
     save_settings()
 
     gr.Info("Settings Changed Successfully",duration=3)
@@ -101,6 +107,7 @@ def load_settings():
     global line_color
     global line_size
     global preload_weights
+    global confidence
     settings_file_path = os.path.join(settings_folder, settings_file_name)
     
     if not os.path.isfile(settings_file_path):
@@ -117,6 +124,7 @@ def load_settings():
         line_color = Color.from_dict(settings.get('line_color', {}))
         line_size = settings.get('line_size', 2)
         preload_weights = settings.get('preload_weights', True)
+        confidence = settings.get('confidence', 0.3)
 
         # print(picker_keypoints_color.value)
         # picker_keypoints_color.value = f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"
@@ -127,13 +135,13 @@ def load_settings():
         # slider_lines_size.value = line_size
 
     settings_loaded = True
-    return True, "Settings file loaded successfully.", keypoints_color, line_color, preload_weights
+    return True, "Settings file loaded successfully.", keypoints_color, keypoints_size, line_color, line_size, preload_weights, confidence
 
 def reload_gradio_from_settings():
     #print("Tab Selected")
     status = load_settings()
     #print(status)
-    return gr.ColorPicker(value=f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"), gr.ColorPicker(value=f"#{line_color.r:02x}{line_color.g:02x}{line_color.b:02x}"),gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size"), gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size"), gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights)
+    return gr.ColorPicker(value=f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"), gr.ColorPicker(value=f"#{line_color.r:02x}{line_color.g:02x}{line_color.b:02x}"),gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size"), gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size"), gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights), gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence")
 
 
 # Check if running on CPU or GPU
@@ -184,7 +192,7 @@ def yolov8_load_model(model_name):
 def load_weights():
     global model
     img = "soldiers.png"
-    results = model(source=img, show=False, conf=0.3, save=False)
+    results = model(source=img, show=False, conf=confidence, save=False)
 
 
 ### IMG TO IMG
@@ -193,7 +201,7 @@ def yolov8_process_image(img):
     global model
     if img is None:
         raise gr.Error("No selected image found, please upload an image first 💥!", duration=5)
-    results = model(source=img, show=False, conf=0.3, save=False)
+    results = model(source=img, show=False, conf=confidence, save=False)
     print(results) # DELETE LATER
     if isinstance(img, Image.Image):
         img = np.array(img)
@@ -204,6 +212,11 @@ def yolov8_process_image(img):
     image = img
     
     people_count = len(results[0].keypoints.xy)
+
+    if people_count==0:
+        raise gr.Error("No people found in the picture!", duration=5)
+        return f"OK.\nPeople Count: {people_count}\nIt took {timer_end-timer_start:0.4f} seconds", image
+
     for person_idx in range(people_count):
         keypoints = results[0].keypoints.xy[person_idx]
         keypoints_scaled = [(int(x), int(y)) for x, y in keypoints]
@@ -227,8 +240,33 @@ def yolov8_process_video(video):
     return "NOT OK"
 
 ### WEBCAM
-def yolov8_process_webcam(feed):
-    return "NOT OK"
+def yolov8_process_webcam():
+    camera_id = 0
+    print(f"Turning on camera id: {camera_id}")
+    cap = cv.VideoCapture(camera_id)
+    if not cap.isOpened():
+        print(f"Cannot open camera id: {camera_id}")
+        exit()
+    frame_width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+
+    #print(f"width:{frame_width} | height:{frame_height}")
+
+    ret, frame = cap.read()
+
+    # if frame is read correctly ret is True
+    if not ret:
+        gr.Error("Can't receive frame (stream end?). Exiting ...")
+
+    #return "TESTING", frame
+
+    status, processed_image = yolov8_process_image(frame)
+    
+    return status, processed_image
+
+# TESTS GO HERE
+
+
 
 ### GRADIO
 tabs = ["img2img", "vid2vid", "webcam", "settings"]
@@ -261,13 +299,14 @@ with gr.Blocks(title=page_title) as demo:
         video_btn.click(yolov8_process_video,inputs=[video],outputs=[video_out_text])
 
     ### Webcam Live
-    with gr.Tab(tabs[2]):
+    with gr.Tab(tabs[2]) as webcam_tab:
         tab_name = gr.Text(value=tabs[2], visible=False)
-        webcam = gr.Video(label="Webcam", sources=['webcam']) #PLACEHOLDER #streaming=True
+        #webcam = gr.Video(label="Webcam", sources=['webcam']) #PLACEHOLDER #streaming=True
         webcam_out_text = gr.Text(value="process webcam to get an output", label="Output Logs")
+        webcam_out_img = gr.Image(value="process webcam to get an output", label="Output Image")
         webcam_btn = gr.Button(value="Process Webcam")
-        webcam_btn.click(yolov8_process_webcam,inputs=[webcam],outputs=[webcam_out_text])
-    
+        webcam_btn.click(yolov8_process_webcam,inputs=[],outputs=[webcam_out_text, webcam_out_img])
+
     ### Settings
     with gr.Tab(tabs[3]) as settings_tab:
         with gr.Row():
@@ -278,15 +317,16 @@ with gr.Blocks(title=page_title) as demo:
                 picker_lines_color = gr.ColorPicker(label="Lines Color", value="#0000FF")
                 slider_lines_size = gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size")
         settings_preload_weights = gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights)
+        settings_confidence = gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence")
         settings_btn = gr.Button(value="Save Changes")
         out_text = gr.Text(value=" ", label="Output Logs")
-        settings_btn.click(apply_settings,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size],outputs=[out_text])
+        settings_btn.click(apply_settings,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence],outputs=[out_text])
         #demo.load(load_settings, inputs=[], outputs=[out_text])
-        settings_tab.select(reload_gradio_from_settings,inputs=[],outputs=[picker_keypoints_color,picker_lines_color, slider_keypoints_size, slider_lines_size, settings_preload_weights])
+        settings_tab.select(reload_gradio_from_settings,inputs=[],outputs=[picker_keypoints_color,picker_lines_color, slider_keypoints_size, slider_lines_size, settings_preload_weights, settings_confidence])
         #gr.themes.builder() #BROKEN
     #demo.Interface.tabs[-1].selected = load_settings
     #settings_tab.
 if __name__ == "__main__":
     status = load_settings()
     print(status)
-    demo.launch(show_api=False)
+    demo.launch()
