@@ -118,16 +118,23 @@ def load_settings():
         line_size = settings.get('line_size', 2)
         preload_weights = settings.get('preload_weights', True)
 
-        print(picker_keypoints_color.value)
-        picker_keypoints_color.value = f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"
-        print(picker_keypoints_color.value)
-        picker_lines_color.value = f"#{line_color.r:02x}{line_color.g:02x}{line_color.b:02x}"
-        settings_preload_weights.value = preload_weights
-        slider_keypoints_size.value = keypoints_size
-        slider_lines_size.value = line_size
+        # print(picker_keypoints_color.value)
+        # picker_keypoints_color.value = f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"
+        # print(picker_keypoints_color.value)
+        # picker_lines_color.value = f"#{line_color.r:02x}{line_color.g:02x}{line_color.b:02x}"
+        # settings_preload_weights.value = preload_weights
+        # slider_keypoints_size.value = keypoints_size
+        # slider_lines_size.value = line_size
 
     settings_loaded = True
     return True, "Settings file loaded successfully.", keypoints_color, line_color, preload_weights
+
+def reload_gradio_from_settings():
+    #print("Tab Selected")
+    status = load_settings()
+    #print(status)
+    return gr.ColorPicker(value=f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"), gr.ColorPicker(value=f"#{line_color.r:02x}{line_color.g:02x}{line_color.b:02x}"),gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size"), gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size"), gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights)
+
 
 # Check if running on CPU or GPU
 device = 'cuda' if torch.cuda.is_available() else 'CPU'
@@ -223,10 +230,6 @@ def yolov8_process_video(video):
 def yolov8_process_webcam(feed):
     return "NOT OK"
 
-def test_selection():
-    print("Tab Selected")
-    status = load_settings()
-    print(status)
 ### GRADIO
 tabs = ["img2img", "vid2vid", "webcam", "settings"]
 with gr.Blocks(css="footer {visibility: hidden}", title=page_title) as demo:
@@ -279,7 +282,7 @@ with gr.Blocks(css="footer {visibility: hidden}", title=page_title) as demo:
         out_text = gr.Text(value=" ", label="Output Logs")
         settings_btn.click(apply_settings,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size],outputs=[out_text])
         #demo.load(load_settings, inputs=[], outputs=[out_text])
-        settings_tab.select(test_selection)
+        settings_tab.select(reload_gradio_from_settings,inputs=[],outputs=[picker_keypoints_color,picker_lines_color, slider_keypoints_size, slider_lines_size, settings_preload_weights])
         #gr.themes.builder() #BROKEN
     #demo.Interface.tabs[-1].selected = load_settings
     #settings_tab.
