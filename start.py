@@ -357,71 +357,81 @@ css = """
 # TESTS GO HERE
 ### GRADIO
 tabs = ["img2img", "vid2vid", "webcam", "settings"]
-with gr.Blocks(title=page_title, css=css) as demo:
+block = gr.Blocks(title=page_title, css=css).queue() #css="footer {visibility: hidden}", 
+#with gr.Blocks(title=page_title, css=css) as demo:
+with block as demo:
+    gr.Markdown('# Human Pose Detection')
+
     # Github icon
     #github_icon = gr.Gallery(values=["logo\\github-mark-white.png"], interactive=False) # I have no idea how Gradio can display logos o.O
     #
     title_box = gr.Textbox(label="Human Pose Detection",value=f"Running on {device}\nUsing OpenCV v{cv.__version__} "+(f" with cuda v{torch.version.cuda}" if device == 'cuda' else "without cuda"))
-    model_load_logs = gr.Textbox(label="Model Info",value=f"No Model Loaded")
-    with gr.Row():
-        with gr.Column():
-             with gr.Row():
-                version_selection = gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model")
-                reload_btn = gr.Button(value=refresh_symbol, elem_id="small-button")
-        load_btn = gr.Button(value="Load Model")
-
-        reload_btn.click(reload_models, inputs=[], outputs=[version_selection])
-        load_btn.click(yolov8_load_model, inputs=[version_selection], outputs=[model_load_logs])
-
-    ### Image To Image
-    with gr.Tab(tabs[0]):
-        tab_name = gr.Text(value=tabs[0], visible=False)
-        image = gr.Image(label="Image")
-        process_btn = gr.Button(value="Process Image")
-        out_text = gr.Text(value="process image to get an output", label="Output Logs")
-        out_image = gr.Image(label="Output Image")
-        work_around_false = gr.Checkbox(label="If you see this, there is something wrong !", value=False, visible=False, render=False)
-        process_btn.click(yolov8_process_image,inputs=[image, work_around_false],outputs=[out_text, out_image])
-
-    ### Video To Video
-    with gr.Tab(tabs[1]):
-        tab_name = gr.Text(value=tabs[1], visible=False)
-        video = gr.Video(label="Video") #, sources=['upload']
-        video_out_text = gr.Text(value="process video to get an output", label="Output Logs")
-        video_btn = gr.Button(value="Process Video")
-        video_btn.click(yolov8_process_video,inputs=[video],outputs=[video_out_text])
-
-    ### Webcam Live
-    with gr.Tab(tabs[2]) as webcam_tab:
-        webcam_out_text = gr.Text(value="process webcam to get an output", label="Output Logs")
-        webcam_out_img = gr.Image(value="process webcam to get an output", label="Output Image")
-        webcam_btn_start = gr.Button(value="Start")
-        webcam_btn_stop = gr.Button(value="Stop")
-
-        webcam_btn_start.click(yolov8_process_webcam, inputs=[], outputs=[webcam_out_text, webcam_out_img]) 
-        webcam_btn_stop.click(yolov8_process_webcam_stop, inputs=[], outputs=[]) 
-
-    ### Settings
-    with gr.Tab(tabs[3]) as settings_tab:
+    with gr.Accordion(label='Step 1: Choose a Model', open=True):
+        model_load_logs = gr.Textbox(label="Model Info",value=f"No Model Loaded")
         with gr.Row():
             with gr.Column():
-                picker_keypoints_color = gr.ColorPicker(label="Keypoints Color", value="#00FF00")
-                slider_keypoints_size = gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size")
-            with gr.Column():
-                picker_lines_color = gr.ColorPicker(label="Lines Color", value="#0000FF")
-                slider_lines_size = gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size")
-        settings_preload_weights = gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights)
-        settings_confidence = gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence")
-        settings_btn = gr.Button(value="Save Changes")
-        out_text = gr.Text(value=" ", label="Output Logs")
-        settings_btn.click(apply_settings,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence],outputs=[out_text])
-        #demo.load(load_settings, inputs=[], outputs=[out_text])
-        settings_tab.select(reload_gradio_from_settings,inputs=[],outputs=[picker_keypoints_color,picker_lines_color, slider_keypoints_size, slider_lines_size, settings_preload_weights, settings_confidence])
-        #gr.themes.builder() #BROKEN
+                with gr.Row():
+                    version_selection = gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model")
+                    reload_btn = gr.Button(value=refresh_symbol, elem_id="small-button")
+            load_btn = gr.Button(value="Load Model")
+
+            reload_btn.click(reload_models, inputs=[], outputs=[version_selection])
+            load_btn.click(yolov8_load_model, inputs=[version_selection], outputs=[model_load_logs])
+    with gr.Accordion(label='Step 2: Choose a mode and run it', open=True):
+        ### Image To Image
+        with gr.Tab(tabs[0]):
+            tab_name = gr.Text(value=tabs[0], visible=False)
+            image = gr.Image(label="Image")
+            process_btn = gr.Button(value="Process Image")
+            out_text = gr.Text(value="process image to get an output", label="Output Logs")
+            out_image = gr.Image(label="Output Image")
+            work_around_false = gr.Checkbox(label="If you see this, there is something wrong !", value=False, visible=False, render=False)
+            process_btn.click(yolov8_process_image,inputs=[image, work_around_false],outputs=[out_text, out_image])
+
+        ### Video To Video
+        with gr.Tab(tabs[1]):
+            tab_name = gr.Text(value=tabs[1], visible=False)
+            video = gr.Video(label="Video") #, sources=['upload']
+            video_out_text = gr.Text(value="process video to get an output", label="Output Logs")
+            video_btn = gr.Button(value="Process Video")
+            video_btn.click(yolov8_process_video,inputs=[video],outputs=[video_out_text])
+
+        ### Webcam Live
+        with gr.Tab(tabs[2]) as webcam_tab:
+            webcam_out_text = gr.Text(value="process webcam to get an output", label="Output Logs")
+            webcam_out_img = gr.Image(value="process webcam to get an output", label="Output Image")
+            webcam_btn_start = gr.Button(value="Start")
+            webcam_btn_stop = gr.Button(value="Stop")
+
+            webcam_btn_start.click(yolov8_process_webcam, inputs=[], outputs=[webcam_out_text, webcam_out_img]) 
+            webcam_btn_stop.click(yolov8_process_webcam_stop, inputs=[], outputs=[]) 
+
+        ### Settings
+        with gr.Tab(tabs[3]) as settings_tab:
+            with gr.Row():
+                with gr.Column():
+                    picker_keypoints_color = gr.ColorPicker(label="Keypoints Color", value="#00FF00")
+                    slider_keypoints_size = gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size")
+                with gr.Column():
+                    picker_lines_color = gr.ColorPicker(label="Lines Color", value="#0000FF")
+                    slider_lines_size = gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size")
+            settings_preload_weights = gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights)
+            settings_confidence = gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence")
+            settings_btn = gr.Button(value="Save Changes")
+            out_text = gr.Text(value=" ", label="Output Logs")
+            settings_btn.click(apply_settings,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence],outputs=[out_text])
+            #demo.load(load_settings, inputs=[], outputs=[out_text])
+            settings_tab.select(reload_gradio_from_settings,inputs=[],outputs=[picker_keypoints_color,picker_lines_color, slider_keypoints_size, slider_lines_size, settings_preload_weights, settings_confidence])
+            #gr.themes.builder() #BROKEN
     #demo.Interface.tabs[-1].selected = load_settings
     #settings_tab.
     demo.load(on_page_load, inputs=[], outputs=[model_load_logs, version_selection])
-if __name__ == "__main__":
-    status = load_settings()
-    print(status)
-    demo.launch()
+# if __name__ == "__main__":
+#     status = load_settings()
+#     print(status)
+#     demo.launch(share=False)
+
+
+status = load_settings()
+print(status)
+block.queue().launch(server_name='127.0.0.1',share=False)
