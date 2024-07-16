@@ -18,6 +18,8 @@ session_folder = os.path.dirname(os.path.abspath(__file__))
 session_file_name = "session.json"
 webcam_on = False
 refresh_symbol = '\U0001f504'  # 🔄
+file_type_list = ["jpg","png"]
+frames_folder = 'frames/'
 # Settings Editable
 class Color:
     def __init__(self, r=0, g=0, b=0):
@@ -41,6 +43,8 @@ preload_weights = True
 
 confidence = 0.3
 
+file_type = "jpg"
+
 def change_keypoints_color(red,green,blue):
     keypoints_color.r = red
     keypoints_color.g = green
@@ -63,7 +67,8 @@ def save_settings():
         'line_color': line_color.to_dict(),
         'line_size': line_size,
         'preload_weights': preload_weights,
-        'confidence': confidence
+        'confidence': confidence,
+        'file_type': file_type
     }
     
     if not settings_folder:
@@ -76,11 +81,12 @@ def save_settings():
     with open(settings_file_path, 'w') as file:
         json.dump(settings, file, indent=4)
 
-def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new_keypoints_size, new_line_size, new_confidence):
+def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new_keypoints_size, new_line_size, new_confidence, new_file_type):
     global preload_weights
     global keypoints_size
     global line_size
     global confidence
+    global file_type
     k_r, k_g, k_b = hex_to_rgb(new_keypoints_color)
     keypoints_color.r = k_r
     keypoints_color.g = k_g
@@ -98,6 +104,8 @@ def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new
 
     confidence = new_confidence
 
+    file_type = new_file_type
+
     save_settings()
 
     gr.Info("Settings Changed Successfully",duration=3)
@@ -111,6 +119,7 @@ def load_settings():
     global line_size
     global preload_weights
     global confidence
+    global file_type
     settings_file_path = os.path.join(settings_folder, settings_file_name)
     
     if not os.path.isfile(settings_file_path):
@@ -128,15 +137,17 @@ def load_settings():
         line_size = settings.get('line_size', 2)
         preload_weights = settings.get('preload_weights', True)
         confidence = settings.get('confidence', 0.3)
+        file_type = settings.get('file_type', "jpg")
 
     settings_loaded = True
-    return True, "Settings file loaded successfully.", keypoints_color, keypoints_size, line_color, line_size, preload_weights, confidence
+    return True, "Settings file loaded successfully.", keypoints_color, keypoints_size, line_color, line_size, preload_weights, confidence, file_type
 
 def reload_gradio_from_settings():
+    global file_type
     #print("Tab Selected")
     status = load_settings()
     #print(status)
-    return gr.ColorPicker(value=f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"), gr.ColorPicker(value=f"#{line_color.r:02x}{line_color.g:02x}{line_color.b:02x}"),gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size"), gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size"), gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights), gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence")
+    return gr.ColorPicker(value=f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"), gr.ColorPicker(value=f"#{line_color.r:02x}{line_color.g:02x}{line_color.b:02x}"),gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size"), gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size"), gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights), gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence"), gr.Radio(value=file_type)
 
 # SESSION
 first_time = True
@@ -310,8 +321,89 @@ def yolov8_process_image(img, print_info):
 
 
 ### VID TO VID
-def yolov8_process_video(video):
-    return "NOT OK"
+import subprocess
+def yolov8_process_video(video, model_name):
+    global frames_folder
+    if video == None:
+        gr.Error(f"Video is empty !", duration=3)
+
+    # Create 'frames' folder if it doesn't exist
+    if not os.path.exists(frames_folder):
+        os.makedirs(frames_folder)
+    else:
+        print("Normally frames would be deleted, not now")
+        # Delete only frame files from the 'frames' folder if it already exists
+        # print(f"Deleting old video frames from {frames_folder}")
+        # for filename in os.listdir(frames_folder):
+        #     del_file_path = os.path.join(frames_folder, filename)
+        #     try:
+        #         os.remove(del_file_path)
+        #     except Exception as e:
+        #         print(f"Failed to delete {del_file_path}. Reason: {e}")
+
+    # Extract frames using ffmpeg
+    # with open(temp_video_path, "wb") as f:
+    #     f.write(video)
+
+    # Extract frames using ffmpeg
+    print(f"Extracting frames from {video}")
+    subprocess.run(['ffmpeg', '-i', video, os.path.join(frames_folder, 'frame%d.jpg')])
+    # Uncomment this after installing FFMPEG
+    
+
+    
+    # Check the list of directories in 'raw_output' folder before running YOLOv8
+    if not os.path.exists('raw_output'):
+        os.makedirs('raw_output')
+    existing_folders_before = os.listdir('raw_output')
+
+    print(f"Loading model : {model_name}")
+    model = YOLO("models//"+model_name)
+
+    frame_file_paths = [os.path.join(frames_folder, filename) for filename in os.listdir(frames_folder) if
+                        filename.endswith(f".{file_type}")]
+    print(f"Processing...")
+    model(source=frame_file_paths, show=False, save=True, conf=confidence, project='raw_output')
+    print(f"Processing Finished")
+    print(f"Creating MP4 file")
+    # Check the list of directories in 'raw_output' folder after running YOLOv8
+    existing_folders_after = os.listdir('raw_output')
+
+    # Find the newly created folder
+    new_folder = [folder for folder in existing_folders_after if folder not in existing_folders_before]
+    if new_folder:
+        new_folder_path = os.path.join('raw_output', new_folder[0])
+        print(f"New folder created: {new_folder_path}")
+
+        # Get the framerate of the original video
+        # Open the video file
+        video = cv.VideoCapture(file_path)
+
+        # Get the frame rate of the video
+        frame_rate = video.get(cv.CAP_PROP_FPS)
+
+        # Release the video capture object
+        video.release()
+
+        output_video_path = os.path.join(f"{os.path.splitext(os.path.basename(file_path))[0]} [model={model_name} filetype={file_type} confidence={confidence}].mp4")
+
+        if os.path.exists(output_video_path):
+            try:
+                os.remove(output_video_path)
+            except Exception as e:
+                print(f"Failed to delete {output_video_path}. Reason: {e}")
+
+        # Generate MP4 video using ffmpeg
+        frame_name= f"frame%d.{file_type}";
+        subprocess.run(['ffmpeg', '-framerate', str(frame_rate), '-i', os.path.join(new_folder_path, frame_name), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', output_video_path])
+
+        print(f"Video generated: {output_video_path}")
+        gr.Info("Successfully Crated a Video")
+
+    else:
+        print("ERROR - No new folder created")
+
+    return f"TEST: {existing_folders_before}", output_video_path
 
 ### WEBCAM
 def yolov8_process_webcam():
@@ -371,12 +463,12 @@ with block as demo:
         with gr.Row():
             with gr.Column():
                 with gr.Row():
-                    version_selection = gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model")
+                    model_selection = gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model")
                     reload_btn = gr.Button(value=refresh_symbol, elem_id="small-button")
             load_btn = gr.Button(value="Load Model")
 
-            reload_btn.click(reload_models, inputs=[], outputs=[version_selection])
-            load_btn.click(yolov8_load_model, inputs=[version_selection], outputs=[model_load_logs])
+            reload_btn.click(reload_models, inputs=[], outputs=[model_selection])
+            load_btn.click(yolov8_load_model, inputs=[model_selection], outputs=[model_load_logs])
     with gr.Accordion(label='Step 2: Choose a mode and run it', open=True):
         ### Image To Image
         with gr.Tab(tabs[0]):
@@ -385,7 +477,7 @@ with block as demo:
             process_btn = gr.Button(value="Process Image")
             out_text = gr.Text(value="process image to get an output", label="Output Logs")
             out_image = gr.Image(label="Output Image")
-            work_around_false = gr.Checkbox(label="If you see this, there is something wrong !", value=False, visible=False, render=False)
+            work_around_false = gr.Checkbox(label="If you see this, there is something wrong !", value=False, visible=False)
             process_btn.click(yolov8_process_image,inputs=[image, work_around_false],outputs=[out_text, out_image])
 
         ### Video To Video
@@ -394,7 +486,11 @@ with block as demo:
             video = gr.Video(label="Video") #, sources=['upload']
             video_out_text = gr.Text(value="process video to get an output", label="Output Logs")
             video_btn = gr.Button(value="Process Video")
-            video_btn.click(yolov8_process_video,inputs=[video],outputs=[video_out_text])
+            
+            video_output = gr.Video(label="Video Output")
+
+
+            video_btn.click(yolov8_process_video,inputs=[video, model_selection],outputs=[video_out_text, video_output])
 
         ### Webcam Live
         with gr.Tab(tabs[2]) as webcam_tab:
@@ -408,24 +504,31 @@ with block as demo:
 
         ### Settings
         with gr.Tab(tabs[3]) as settings_tab:
-            with gr.Row():
-                with gr.Column():
-                    picker_keypoints_color = gr.ColorPicker(label="Keypoints Color", value="#00FF00")
-                    slider_keypoints_size = gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size")
-                with gr.Column():
-                    picker_lines_color = gr.ColorPicker(label="Lines Color", value="#0000FF")
-                    slider_lines_size = gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size")
-            settings_preload_weights = gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights)
-            settings_confidence = gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence")
+            with gr.Accordion(label='Global Settings', open=True):
+                with gr.Row():
+                    with gr.Column():
+                        picker_keypoints_color = gr.ColorPicker(label="Keypoints Color", value="#00FF00")
+                        slider_keypoints_size = gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size")
+                    with gr.Column():
+                        picker_lines_color = gr.ColorPicker(label="Lines Color", value="#0000FF")
+                        slider_lines_size = gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size")
+                settings_preload_weights = gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights)
+                settings_confidence = gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence")
+            
+            with gr.Accordion(label='Vid2vid Settings', open=True):
+                with gr.Row():
+                    settings_file_type = gr.Radio(file_type_list, value=file_type, label="File type", interactive=True, info="png: slower, bigger file, higher accuracity, higher quality")
             settings_btn = gr.Button(value="Save Changes")
             out_text = gr.Text(value=" ", label="Output Logs")
-            settings_btn.click(apply_settings,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence],outputs=[out_text])
+
+            settings_btn.click(apply_settings,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type],outputs=[out_text])
             #demo.load(load_settings, inputs=[], outputs=[out_text])
-            settings_tab.select(reload_gradio_from_settings,inputs=[],outputs=[picker_keypoints_color,picker_lines_color, slider_keypoints_size, slider_lines_size, settings_preload_weights, settings_confidence])
+            settings_tab.select(reload_gradio_from_settings,inputs=[],outputs=[picker_keypoints_color,picker_lines_color, slider_keypoints_size, slider_lines_size, settings_preload_weights, settings_confidence, settings_file_type])
             #gr.themes.builder() #BROKEN
     #demo.Interface.tabs[-1].selected = load_settings
     #settings_tab.
-    demo.load(on_page_load, inputs=[], outputs=[model_load_logs, version_selection])
+    demo.load(on_page_load, inputs=[], outputs=[model_load_logs, model_selection])
+    #print(demo.blocks)
 # if __name__ == "__main__":
 #     status = load_settings()
 #     print(status)
