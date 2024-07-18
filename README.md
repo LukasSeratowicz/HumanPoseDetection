@@ -15,10 +15,11 @@ Feel Free to follow for any updates!
 
 Project Status:
 - Image To Image <- Basic Functionality Implemented
-- Video To Video <- Not Implemented
+- Video To Video <- Basic Functionality Implemented (needs more testing)
 - Webcam         <- Basic Functionality Implemented (needs more testing)
 - Settings       <- Implemented
 
 Known Issues:
 - Gradio has trouble processing live webcam footage, might have to add a seperate button that will make a new window using openCV (for now, start stop button instead + using opencv webcam instead of gradio)
 - Settings Tab loads settings from config file each time tab is opened instead of on page load (will fix that much later on)
+- Do we want to make it local or deployable is the big question here. Right now it will be local only, we'll see in the future
