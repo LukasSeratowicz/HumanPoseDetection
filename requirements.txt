@@ -2,3 +2,4 @@ gradio==4.37.2
 ultralytics==8.2.55
 opencv-python==4.10.0.84
 Pillow==10.4.0
+gradio-modal==0.0.3

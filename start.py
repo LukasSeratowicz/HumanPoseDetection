@@ -1,4 +1,5 @@
 import gradio as gr
+from gradio_modal import Modal
 import numpy as np
 from ultralytics import YOLO
 import cv2 as cv
@@ -530,6 +531,53 @@ with block as demo:
             settings_btn = gr.Button(value="Save Changes")
             out_text = gr.Text(value=" ", label="Output Logs")
 
+            show_btn = gr.Button("View Changelog")
+
+            with Modal(visible=False) as modal:
+                gr.Markdown("# Changelog")
+                # with gr.Accordion(label='# Version 0.3 - Ongoing', open=True):
+                #     with gr.Group():
+                #         with gr.Accordion(label='# Version 0.3.0 - Ongoing', open=True):
+                #             gr.Markdown("- come back here later")
+                with gr.Accordion(label='# Version 0.2 - Newest version released on 19/07/2024', open=True):
+                    with gr.Group():
+                        with gr.Accordion(label='# Version 0.2.7 - 19/07/2024', open=True):
+                            gr.Markdown("- Changelog Implemented")
+                            gr.Markdown("- Files Clean Up")
+                            gr.Markdown("- UI changes - Grouping of elements added")
+                        with gr.Accordion(label='# Version 0.2.6 - 16/07/2024', open=False):
+                            gr.Markdown("- Vid2vid basic version implemented")
+                            gr.Markdown("- UI changes")
+                        with gr.Accordion(label='# Version 0.2.5 - 15/07/2024', open=False):
+                            gr.Markdown("- CSS now works. Changed Button Look")
+                            gr.Markdown("- Session File added to save basic stuff")
+                            gr.Markdown("- Refresh Model List added")
+                            gr.Markdown("- Webcam now works using opencv")
+                        with gr.Accordion(label='# Version 0.2.4 - 15/07/2024', open=False):
+                            gr.Markdown("- Images Clean Up")
+                            gr.Markdown("- Webcam now works with snapshot button")
+                            gr.Markdown("- Gradio elements now refresh correctly on page reload")
+                        with gr.Accordion(label='# Version 0.2.3 - 15/07/2024', open=False):
+                            gr.Markdown("- Requirements.txt added")
+                            gr.Markdown("- Settings implemented")
+                        with gr.Accordion(label='# Version 0.2.2 - 12/07/2024', open=False):
+                            gr.Markdown("- vid2vid and webcam ui placeholders")
+                            gr.Markdown("- Clean Up of code and pictures")
+                        with gr.Accordion(label='# Version 0.2.1 - 11/07/2024', open=False):
+                            gr.Markdown("- Model Loading Progress Bar added")
+                            gr.Markdown("- Model Info Text Box added")
+                            gr.Markdown("- Various checks for wrong input added")
+                with gr.Accordion(label='# Version 0.1 - Newest version released on 11/07/2024', open=False):
+                    gr.Markdown("- Basic UI Implemented")
+                    gr.Markdown("- Loading yolov8 model added")
+                    gr.Markdown("- Img2Img basic functionality added")
+                    gr.Markdown("- Settings added")
+                    # gr.Textbox(show_label=False, 
+                    #            value="""- Basic UI Implemented\n- Loading yolov8 model added\n- Img2Img basic functionality added
+                    #            """)
+            show_btn.click(lambda: Modal(visible=True), None, modal)
+
+
             settings_btn.click(apply_settings,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type],outputs=[out_text])
             #demo.load(load_settings, inputs=[], outputs=[out_text])
             settings_tab.select(reload_gradio_from_settings,inputs=[],outputs=[picker_keypoints_color,picker_lines_color, slider_keypoints_size, slider_lines_size, settings_preload_weights, settings_confidence, settings_file_type])
@@ -546,4 +594,4 @@ with block as demo:
 
 status = load_settings()
 print(status)
-block.queue().launch(server_name='127.0.0.1',share=True)
+block.queue().launch(server_name='127.0.0.1',share=False)
