@@ -457,47 +457,53 @@ with block as demo:
     # Github icon
     #github_icon = gr.Gallery(values=["logo\\github-mark-white.png"], interactive=False) # I have no idea how Gradio can display logos o.O
     #
-    title_box = gr.Textbox(label="Human Pose Detection",value=f"Running on {device}\nUsing OpenCV v{cv.__version__} "+(f" with cuda v{torch.version.cuda}" if device == 'cuda' else "without cuda"))
+    title_box = gr.Textbox(label="Human Pose Detection",show_label=False,value=f"Running on {device}\nUsing OpenCV v{cv.__version__} "+(f" with cuda v{torch.version.cuda}" if device == 'cuda' else "without cuda"))
     with gr.Accordion(label='Step 1: Choose a Model', open=True):
-        model_load_logs = gr.Textbox(label="Model Info",value=f"No Model Loaded")
-        with gr.Row():
-            with gr.Column():
-                with gr.Row():
-                    model_selection = gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model")
-                    reload_btn = gr.Button(value=refresh_symbol, elem_id="small-button")
-            load_btn = gr.Button(value="Load Model")
+        with gr.Group():
+            model_load_logs = gr.Textbox(label="Model Info",value=f"No Model Loaded")
+            with gr.Row():
+                with gr.Column():
+                    with gr.Row():
+                        model_selection = gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model")
+                        reload_btn = gr.Button(value=refresh_symbol, elem_id="small-button")
+                load_btn = gr.Button(value="Load Model")
 
-            reload_btn.click(reload_models, inputs=[], outputs=[model_selection])
-            load_btn.click(yolov8_load_model, inputs=[model_selection], outputs=[model_load_logs])
+                reload_btn.click(reload_models, inputs=[], outputs=[model_selection])
+                load_btn.click(yolov8_load_model, inputs=[model_selection], outputs=[model_load_logs])
     with gr.Accordion(label='Step 2: Choose a mode and run it', open=True):
         ### Image To Image
         with gr.Tab(tabs[0]):
-            tab_name = gr.Text(value=tabs[0], visible=False)
-            image = gr.Image(label="Image")
-            process_btn = gr.Button(value="Process Image")
-            out_text = gr.Text(value="process image to get an output", label="Output Logs")
-            out_image = gr.Image(label="Output Image")
-            work_around_false = gr.Checkbox(label="If you see this, there is something wrong !", value=False, visible=False)
+            with gr.Group():
+                tab_name = gr.Text(value=tabs[0], visible=False)
+                image = gr.Image(label="Image")
+                process_btn = gr.Button(value="Process Image")
+            with gr.Group():
+                out_image = gr.Image(label="Output Image")
+                work_around_false = gr.Checkbox(label="If you see this, there is something wrong !", value=False, visible=False)
+                out_text = gr.Text(value="process image to get an output", label="Output Logs")
             process_btn.click(yolov8_process_image,inputs=[image, work_around_false],outputs=[out_text, out_image])
 
         ### Video To Video
         with gr.Tab(tabs[1]):
-            tab_name = gr.Text(value=tabs[1], visible=False)
-            video = gr.Video(label="Video") #, sources=['upload']
-            video_out_text = gr.Text(value="process video to get an output", label="Output Logs")
-            video_btn = gr.Button(value="Process Video")
-            
-            video_output = gr.Video(label="Video Output")
+            with gr.Group():
+                tab_name = gr.Text(value=tabs[1], visible=False)
+                video = gr.Video(label="Video") #, sources=['upload']
+                video_btn = gr.Button(value="Process Video")
+            with gr.Group():
+                video_output = gr.Video(label="Video Output")
+                video_out_text = gr.Text(value="process video to get an output", label="Output Logs")
 
 
             video_btn.click(yolov8_process_video,inputs=[video, model_selection],outputs=[video_out_text, video_output])
 
         ### Webcam Live
         with gr.Tab(tabs[2]) as webcam_tab:
-            webcam_out_text = gr.Text(value="process webcam to get an output", label="Output Logs")
-            webcam_out_img = gr.Image(value="process webcam to get an output", label="Output Image")
-            webcam_btn_start = gr.Button(value="Start")
-            webcam_btn_stop = gr.Button(value="Stop")
+            with gr.Group():
+                webcam_out_img = gr.Image(value="process webcam to get an output", label="Output Image")
+                webcam_btn_start = gr.Button(value="Start")
+                webcam_btn_stop = gr.Button(value="Stop")
+            with gr.Group():
+                webcam_out_text = gr.Text(value="process webcam to get an output", label="Output Logs")
 
             webcam_btn_start.click(yolov8_process_webcam, inputs=[], outputs=[webcam_out_text, webcam_out_img]) 
             webcam_btn_stop.click(yolov8_process_webcam_stop, inputs=[], outputs=[]) 
@@ -507,13 +513,16 @@ with block as demo:
             with gr.Accordion(label='Global Settings', open=True):
                 with gr.Row():
                     with gr.Column():
-                        picker_keypoints_color = gr.ColorPicker(label="Keypoints Color", value="#00FF00")
-                        slider_keypoints_size = gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size")
+                        with gr.Group():
+                            picker_keypoints_color = gr.ColorPicker(label="Keypoints Color", value="#00FF00")
+                            slider_keypoints_size = gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size")
                     with gr.Column():
-                        picker_lines_color = gr.ColorPicker(label="Lines Color", value="#0000FF")
-                        slider_lines_size = gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size")
-                settings_preload_weights = gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights)
-                settings_confidence = gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence")
+                        with gr.Group():
+                            picker_lines_color = gr.ColorPicker(label="Lines Color", value="#0000FF")
+                            slider_lines_size = gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size")
+                with gr.Group():
+                    settings_preload_weights = gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights)
+                    settings_confidence = gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence")
             
             with gr.Accordion(label='Vid2vid Settings', open=True):
                 with gr.Row():
@@ -537,4 +546,4 @@ with block as demo:
 
 status = load_settings()
 print(status)
-block.queue().launch(server_name='127.0.0.1',share=False)
+block.queue().launch(server_name='127.0.0.1',share=True)
