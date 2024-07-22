@@ -545,7 +545,7 @@ with block as demo:
                 #     with gr.Group():
                 #         with gr.Accordion(label='# Version 0.3.0 - Ongoing', open=True):
                 #             gr.Markdown("- come back here later")
-                with gr.Accordion(label='# Version 0.2 - Newest version released on 19/07/2024', open=True):
+                with gr.Accordion(label='# Version 0.2 - Newest version released on 22/07/2024', open=True):
                     with gr.Group():
                         with gr.Accordion(label='# Version 0.2.8 - 22/07/2024', open=True):
                             gr.Markdown("- People Counter now works properly")
