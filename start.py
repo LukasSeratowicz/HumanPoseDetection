@@ -461,16 +461,16 @@ with block as demo:
     title_box = gr.Textbox(label="Human Pose Detection",show_label=False,value=f"Running on {device}\nUsing OpenCV v{cv.__version__} "+(f" with cuda v{torch.version.cuda}" if device == 'cuda' else "without cuda"))
     with gr.Accordion(label='Step 1: Choose a Model', open=True):
         with gr.Group():
-            model_load_logs = gr.Textbox(label="Model Info",value=f"No Model Loaded")
             with gr.Row():
                 with gr.Column():
                     with gr.Row():
                         model_selection = gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model")
                         reload_btn = gr.Button(value=refresh_symbol, elem_id="small-button")
                 load_btn = gr.Button(value="Load Model")
-
-                reload_btn.click(reload_models, inputs=[], outputs=[model_selection])
-                load_btn.click(yolov8_load_model, inputs=[model_selection], outputs=[model_load_logs])
+            with gr.Accordion(label="Model Info", open=True):
+                model_load_logs = gr.Textbox(show_label=False, value=f"No Model Loaded")
+        reload_btn.click(reload_models, inputs=[], outputs=[model_selection])
+        load_btn.click(yolov8_load_model, inputs=[model_selection], outputs=[model_load_logs])
     with gr.Accordion(label='Step 2: Choose a mode and run it', open=True):
         ### Image To Image
         with gr.Tab(tabs[0]):
