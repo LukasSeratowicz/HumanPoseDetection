@@ -296,6 +296,12 @@ def yolov8_process_image(img, print_info):
 
     image = img
     
+    height, width, _ = image.shape
+
+    scale_width = width / 640.0
+    scale_height = height / 640.0
+    scale = min(scale_width, scale_height)
+    
     people_count = len(results[0].keypoints.xy)
 
     if people_count==0:
@@ -307,7 +313,7 @@ def yolov8_process_image(img, print_info):
         keypoints_scaled = [(int(x), int(y)) for x, y in keypoints]
         for x, y in keypoints_scaled:
             if x != 0 and y != 0:
-                cv.circle(image, (x, y), int(keypoints_size), (keypoints_color.r, keypoints_color.g, keypoints_color.b), int(keypoints_size/2))
+                cv.circle(image, (x, y), int(keypoints_size*scale), (keypoints_color.r, keypoints_color.g, keypoints_color.b), int(keypoints_size*scale/2))
         for (start_idx, end_idx) in KEYPOINT_PAIRS:
             if start_idx < len(keypoints_scaled) and end_idx < len(keypoints_scaled):
                 start_point = keypoints_scaled[start_idx]
@@ -318,7 +324,7 @@ def yolov8_process_image(img, print_info):
     timer_end = time.perf_counter()
     if print_info == True:
         gr.Info(f"Processing Finished\nafter {timer_end-timer_start:0.4f} seconds", duration=5)
-    return f"OK.\nPeople Count: {people_count}\nIt took {timer_end-timer_start:0.4f} seconds", image
+    return f"OK.\nPeople Count: {people_count}\nIt took {timer_end-timer_start:0.4f} seconds, Image dim [{width}, {height}], Scales [{scale_width}, {scale_height}] fin[{scale}]", image
 
 
 ### VID TO VID
@@ -541,7 +547,10 @@ with block as demo:
                 #             gr.Markdown("- come back here later")
                 with gr.Accordion(label='# Version 0.2 - Newest version released on 19/07/2024', open=True):
                     with gr.Group():
-                        with gr.Accordion(label='# Version 0.2.7 - 19/07/2024', open=True):
+                        with gr.Accordion(label='# Version 0.2.8 - 22/07/2024', open=True):
+                            gr.Markdown("- Keypoints and Lines now Scale with Image")
+                            gr.Markdown("- Step 1 layout change")
+                        with gr.Accordion(label='# Version 0.2.7 - 19/07/2024', open=False):
                             gr.Markdown("- Changelog Implemented")
                             gr.Markdown("- Files Clean Up")
                             gr.Markdown("- UI changes - Grouping of elements added")
