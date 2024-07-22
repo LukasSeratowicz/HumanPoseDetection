@@ -19,6 +19,7 @@ session_folder = os.path.dirname(os.path.abspath(__file__))
 session_file_name = "session.json"
 webcam_on = False
 refresh_symbol = '\U0001f504'  # 🔄
+warning_symbol = '\u26A0\uFE0F'  # ⚠️
 file_type_list = ["jpg","png"]
 frames_folder = 'frames/'
 unsaved_settings = False
@@ -456,6 +457,12 @@ css = """
     font-size: 24px !important;
     min-width: min(45px, 100%) !important;
 }
+#modal_unsaved {
+    align-content: center !important;
+}
+#modal_unsaved > div {
+    width: 40% !important;
+}
 """
 # TESTS GO HERE
 ### GRADIO
@@ -619,10 +626,10 @@ with block as demo:
             #demo.load(load_settings, inputs=[], outputs=[out_text])
             settings_tab.select(reload_gradio_from_settings,inputs=[],outputs=[picker_keypoints_color,picker_lines_color, slider_keypoints_size, slider_lines_size, settings_preload_weights, settings_confidence, settings_file_type])
             
-        with Modal(visible=False) as modal_unsaved:
-            gr.Markdown("# You have unsaved changes!")
+        with Modal(visible=False, elem_id="modal_unsaved") as modal_unsaved:
+            gr.Markdown(f"# You have unsaved changes!{warning_symbol}")
             with gr.Group():
-                gr.Markdown("Are you sure you want to leave?")
+                gr.Markdown("Are you sure you want to leave without saving your changes?")
             with gr.Group():
                 with gr.Row():
                     discard_btn = gr.Button(value="Discard")
