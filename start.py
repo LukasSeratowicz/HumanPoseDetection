@@ -302,7 +302,7 @@ def yolov8_process_image(img, print_info):
     scale_height = height / 640.0
     scale = min(scale_width, scale_height)
     
-    people_count = len(results[0].keypoints.xy)
+    people_count = len(results[0].boxes.data)
 
     if people_count==0:
         raise gr.Error("No people found in the picture!", duration=5)
@@ -548,6 +548,7 @@ with block as demo:
                 with gr.Accordion(label='# Version 0.2 - Newest version released on 19/07/2024', open=True):
                     with gr.Group():
                         with gr.Accordion(label='# Version 0.2.8 - 22/07/2024', open=True):
+                            gr.Markdown("- People Counter now works properly")
                             gr.Markdown("- Keypoints and Lines now Scale with Image")
                             gr.Markdown("- Step 1 layout change")
                         with gr.Accordion(label='# Version 0.2.7 - 19/07/2024', open=False):
