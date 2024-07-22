@@ -21,6 +21,8 @@ webcam_on = False
 refresh_symbol = '\U0001f504'  # 🔄
 file_type_list = ["jpg","png"]
 frames_folder = 'frames/'
+unsaved_settings = False
+first_time_bug_fix = 5
 # Settings Editable
 class Color:
     def __init__(self, r=0, g=0, b=0):
@@ -88,6 +90,7 @@ def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new
     global line_size
     global confidence
     global file_type
+    global unsaved_settings
     k_r, k_g, k_b = hex_to_rgb(new_keypoints_color)
     keypoints_color.r = k_r
     keypoints_color.g = k_g
@@ -109,6 +112,7 @@ def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new
 
     save_settings()
 
+    unsaved_settings=False
     gr.Info("Settings Changed Successfully",duration=3)
     return "Settings Changed"
 
@@ -479,7 +483,7 @@ with block as demo:
         load_btn.click(yolov8_load_model, inputs=[model_selection], outputs=[model_load_logs])
     with gr.Accordion(label='Step 2: Choose a mode and run it', open=True):
         ### Image To Image
-        with gr.Tab(tabs[0]):
+        with gr.Tab(tabs[0]) as image_tab:
             with gr.Group():
                 tab_name = gr.Text(value=tabs[0], visible=False)
                 image = gr.Image(label="Image")
@@ -491,7 +495,7 @@ with block as demo:
             process_btn.click(yolov8_process_image,inputs=[image, work_around_false],outputs=[out_text, out_image])
 
         ### Video To Video
-        with gr.Tab(tabs[1]):
+        with gr.Tab(tabs[1]) as video_tab:
             with gr.Group():
                 tab_name = gr.Text(value=tabs[1], visible=False)
                 video = gr.Video(label="Video") #, sources=['upload']
@@ -537,6 +541,27 @@ with block as demo:
             settings_btn = gr.Button(value="Save Changes")
             out_text = gr.Text(value=" ", label="Output Logs")
 
+            def settings_changed():
+                global unsaved_settings
+                global settings_loaded
+                global first_time_bug_fix
+                if first_time_bug_fix > 0:
+                    first_time_bug_fix -= 1
+                    #print(f"first_time_bug_fix: {first_time_bug_fix}")
+                    unsaved_settings = False
+                    return
+                if settings_loaded:
+                    unsaved_settings = True
+
+            picker_keypoints_color.change(settings_changed, inputs=[], outputs=[])
+            slider_keypoints_size.change(settings_changed, inputs=[], outputs=[])
+            picker_lines_color.change(settings_changed, inputs=[], outputs=[])
+            slider_lines_size.change(settings_changed, inputs=[], outputs=[])
+            settings_preload_weights.change(settings_changed, inputs=[], outputs=[])
+            settings_confidence.change(settings_changed, inputs=[], outputs=[])
+            settings_file_type.change(settings_changed, inputs=[], outputs=[])
+
+
             show_btn = gr.Button("View Changelog")
 
             with Modal(visible=False) as modal:
@@ -547,7 +572,9 @@ with block as demo:
                 #             gr.Markdown("- come back here later")
                 with gr.Accordion(label='# Version 0.2 - Newest version released on 22/07/2024', open=True):
                     with gr.Group():
-                        with gr.Accordion(label='# Version 0.2.8 - 22/07/2024', open=True):
+                        with gr.Accordion(label='# Version 0.2.9 - 22/07/2024', open=True):
+                            gr.Markdown("- Unsaved changes modal test")
+                        with gr.Accordion(label='# Version 0.2.8 - 22/07/2024', open=False):
                             gr.Markdown("- People Counter now works properly")
                             gr.Markdown("- Keypoints and Lines now Scale with Image")
                             gr.Markdown("- Step 1 layout change")
@@ -591,10 +618,45 @@ with block as demo:
             settings_btn.click(apply_settings,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type],outputs=[out_text])
             #demo.load(load_settings, inputs=[], outputs=[out_text])
             settings_tab.select(reload_gradio_from_settings,inputs=[],outputs=[picker_keypoints_color,picker_lines_color, slider_keypoints_size, slider_lines_size, settings_preload_weights, settings_confidence, settings_file_type])
+            
+        with Modal(visible=False) as modal_unsaved:
+            gr.Markdown("# You have unsaved changes!")
+            with gr.Group():
+                gr.Markdown("Are you sure you want to leave?")
+            with gr.Group():
+                with gr.Row():
+                    discard_btn = gr.Button(value="Discard")
+                    save_btn = gr.Button(value="Save")
+            def discard_changes():
+                return gr.update(visible=False)
+            def save_and_quit(picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type):
+                status = apply_settings(picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type)
+                return status, gr.update(visible=False)
+            discard_btn.click(discard_changes,inputs=[],outputs=[modal_unsaved])
+            save_btn.click(save_and_quit,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type],outputs=[out_text, modal_unsaved])
+            
+            
+
+        def check_unsaved_settings():
+            global unsaved_settings
+            #global first_time_bug_fix
+            print(f"unsaved_settings: {unsaved_settings}")
+            # if first_time_bug_fix:
+            #     first_time_bug_fix = False
+            #     return gr.update(visible=True)
+            if unsaved_settings:
+                unsaved_settings=False
+                return gr.update(visible=True)
+            return gr.update(visible=False)
+        image_tab.select(check_unsaved_settings, inputs=[], outputs=[modal_unsaved])
+        video_tab.select(check_unsaved_settings, inputs=[], outputs=[modal_unsaved])
+        webcam_tab.select(check_unsaved_settings, inputs=[], outputs=[modal_unsaved])
+            
             #gr.themes.builder() #BROKEN
     #demo.Interface.tabs[-1].selected = load_settings
     #settings_tab.
     demo.load(on_page_load, inputs=[], outputs=[model_load_logs, model_selection])
+    
     #print(demo.blocks)
 # if __name__ == "__main__":
 #     status = load_settings()
