@@ -38,6 +38,14 @@ class Color:
     def from_dict(data):
         return Color(r=data.get('r', 0), g=data.get('g', 0), b=data.get('b', 0))
 
+    def to_hex(self):
+        return '#{:02x}{:02x}{:02x}'.format(self.r, self.g, self.b)
+    
+def from_hex(hex_str):
+    hex_str = hex_str.lstrip('#')
+    r, g, b = tuple(int(hex_str[i:i+2], 16) for i in (0, 2, 4))
+    return Color(r, g, b)
+    
 keypoints_color = Color(r=0, g=255, b=0)
 line_color = Color(r=0, g=0, b=255)
 keypoints_size = 2
@@ -92,6 +100,7 @@ def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new
     global confidence
     global file_type
     global unsaved_settings
+    global unsaved_settings_changes
     k_r, k_g, k_b = hex_to_rgb(new_keypoints_color)
     keypoints_color.r = k_r
     keypoints_color.g = k_g
@@ -112,7 +121,7 @@ def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new
     file_type = new_file_type
 
     save_settings()
-
+    unsaved_settings_changes.clear()
     unsaved_settings=False
     gr.Info("Settings Changed Successfully",duration=3)
     return "Settings Changed"
@@ -150,11 +159,40 @@ def load_settings():
 
 def reload_gradio_from_settings():
     global file_type
+    global unsaved_settings
+    global unsaved_settings_changes
+    unsaved_settings_changes.clear()
+    unsaved_settings = False
     #print("Tab Selected")
     status = load_settings()
     #print(status)
     return gr.ColorPicker(value=f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"), gr.ColorPicker(value=f"#{line_color.r:02x}{line_color.g:02x}{line_color.b:02x}"),gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size"), gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size"), gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights), gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence"), gr.Radio(value=file_type)
 
+class UnsavedChanges:
+    def __init__(self):
+        self.data = {}
+
+    def add(self, key, value):
+        if not isinstance(key, str):
+            raise ValueError("Key must be a string")
+        if not isinstance(value, str):
+            raise ValueError("Value must be a string")
+        
+        self.data[key] = value
+
+    def clear(self):
+        self.data.clear()
+
+    def __repr__(self):
+        return str(self.data)
+    
+    def iterate_items(self):
+        for key, value in self.data.items():
+            yield key, value
+
+    def size(self):
+        return len(self.data)
+unsaved_settings_changes = UnsavedChanges()
 # SESSION
 first_time = True
 session_model_name = None
@@ -292,7 +330,7 @@ def yolov8_process_image(img, print_info):
     if model is None:
         raise gr.Error("Please select and load model first 💥!", duration=5)
     results = model(source=img, show=False, conf=confidence, save=False)
-    print(results) # DELETE LATER
+    #print(results) # DELETE LATER
     if isinstance(img, Image.Image):
         img = np.array(img)
 
@@ -548,25 +586,29 @@ with block as demo:
             settings_btn = gr.Button(value="Save Changes")
             out_text = gr.Text(value=" ", label="Output Logs")
 
-            def settings_changed():
+            def settings_changed(widget_name, value):
+                value = f"{str(value)}"
+                #print(f"Widget Name: {widget_name} Value: {value}")
                 global unsaved_settings
                 global settings_loaded
                 global first_time_bug_fix
+                global unsaved_settings_changes
                 if first_time_bug_fix > 0:
                     first_time_bug_fix -= 1
                     #print(f"first_time_bug_fix: {first_time_bug_fix}")
                     unsaved_settings = False
                     return
+                unsaved_settings_changes.add(widget_name, value)
                 if settings_loaded:
-                    unsaved_settings = True
+                   unsaved_settings = True
 
-            picker_keypoints_color.change(settings_changed, inputs=[], outputs=[])
-            slider_keypoints_size.change(settings_changed, inputs=[], outputs=[])
-            picker_lines_color.change(settings_changed, inputs=[], outputs=[])
-            slider_lines_size.change(settings_changed, inputs=[], outputs=[])
-            settings_preload_weights.change(settings_changed, inputs=[], outputs=[])
-            settings_confidence.change(settings_changed, inputs=[], outputs=[])
-            settings_file_type.change(settings_changed, inputs=[], outputs=[])
+            picker_keypoints_color.change(lambda value: settings_changed('[global] keypoints color', value), inputs=[picker_keypoints_color], outputs=[])
+            slider_keypoints_size.change(lambda value: settings_changed('[global] keypoints size', value), inputs=[slider_keypoints_size], outputs=[])
+            picker_lines_color.change(lambda value: settings_changed('[global] lines color', value), inputs=[picker_lines_color], outputs=[])
+            slider_lines_size.change(lambda value: settings_changed('[global] lines size', value), inputs=[slider_lines_size], outputs=[])
+            settings_preload_weights.change(lambda value: settings_changed('[global] preload weight', value), inputs=[settings_preload_weights], outputs=[])
+            settings_confidence.change(lambda value: settings_changed('[global] confidence', value), inputs=[settings_confidence], outputs=[])
+            settings_file_type.change(lambda value: settings_changed('[vid2vid] file type', value), inputs=[settings_file_type], outputs=[])
 
 
             show_btn = gr.Button("View Changelog")
@@ -579,8 +621,14 @@ with block as demo:
                 #             gr.Markdown("- come back here later")
                 with gr.Accordion(label='# Version 0.2 - Newest version released on 22/07/2024', open=True):
                     with gr.Group():
-                        with gr.Accordion(label='# Version 0.2.9 - 22/07/2024', open=True):
-                            gr.Markdown("- Unsaved changes modal test")
+                        with gr.Accordion(label='# Version 0.2.9 - 23/07/2024', open=True):
+                            with gr.Accordion(label='# Version 0.2.9.5 - 23/07/2024', open=True):
+                                gr.Markdown("- Unsaved changes modal - colored squares added to color changes")
+                                gr.Markdown("- Unsaved changes modal - now displays list of changes made")
+                                gr.Markdown("- Unsaved changes modal - many bug fixes")
+                            with gr.Accordion(label='# Version 0.2.9.0 - 22/07/2024', open=False):
+                                gr.Markdown("- Unsaved changes modal css added")
+                                gr.Markdown("- Unsaved changes modal basic functionality")
                         with gr.Accordion(label='# Version 0.2.8 - 22/07/2024', open=False):
                             gr.Markdown("- People Counter now works properly")
                             gr.Markdown("- Keypoints and Lines now Scale with Image")
@@ -630,46 +678,76 @@ with block as demo:
             gr.Markdown(f"# You have unsaved changes!{warning_symbol}")
             with gr.Group():
                 gr.Markdown("Are you sure you want to leave without saving your changes?")
+                #((x+"\n" for x in unsaved_settings_changes))
+                @gr.render(triggers=[picker_keypoints_color.change,
+            slider_keypoints_size.change,
+            picker_lines_color.change,
+            slider_lines_size.change,
+            settings_preload_weights.change,
+            settings_confidence.change,
+            settings_file_type.change])
+                def draw_changes():
+                    global unsaved_settings_changes
+                    for key, value in unsaved_settings_changes.iterate_items():
+                        # FIND A BETTER, CLEANER SOLUTION FOR THIS PLZ
+                        pre_value = "Unknown"
+                        if key == '[global] keypoints color':
+                            pre_value = f"({keypoints_color.r},{keypoints_color.g},{keypoints_color.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(keypoints_color.r, keypoints_color.g, keypoints_color.b)};'>■</span>"
+                            col = from_hex(value)
+                            value = f"({col.r},{col.g},{col.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(col.r, col.g, col.b)};'>■</span>"
+                        elif key == '[global] keypoints size':
+                            pre_value = str(keypoints_size)
+                        elif key == '[global] lines color':
+                            pre_value = f"({line_color.r},{line_color.g},{line_color.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(line_color.r, line_color.g, line_color.b)};'>■</span>"
+                            col = from_hex(value)
+                            value = f"({col.r},{col.g},{col.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(col.r, col.g, col.b)};'>■</span>"
+                        elif key == '[global] lines size':
+                            pre_value = str(line_size)
+                        elif key == '[global] preload weight':
+                            pre_value = str(preload_weights)
+                        elif key == '[global] confidence':
+                            pre_value = str(confidence)
+                        elif key == '[vid2vid] file type':
+                            pre_value = str(file_type)
+                        if(pre_value != value): #sometimes on start it bugs out :/
+                            gr.Markdown(f"{key}: {pre_value} -> {value}")
             with gr.Group():
                 with gr.Row():
                     discard_btn = gr.Button(value="Discard")
                     save_btn = gr.Button(value="Save")
             def discard_changes():
+                global unsaved_settings_changes
+                unsaved_settings_changes.clear()
                 return gr.update(visible=False)
             def save_and_quit(picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type):
                 status = apply_settings(picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type)
                 return status, gr.update(visible=False)
             discard_btn.click(discard_changes,inputs=[],outputs=[modal_unsaved])
             save_btn.click(save_and_quit,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type],outputs=[out_text, modal_unsaved])
-            
+        
             
 
         def check_unsaved_settings():
             global unsaved_settings
-            #global first_time_bug_fix
-            print(f"unsaved_settings: {unsaved_settings}")
-            # if first_time_bug_fix:
-            #     first_time_bug_fix = False
-            #     return gr.update(visible=True)
+            global first_time_bug_fix
             if unsaved_settings:
                 unsaved_settings=False
+                if unsaved_settings_changes.size()<=1: # I have no idea why, no one touch this
+                    first_time_bug_fix=1
+                else:
+                    first_time_bug_fix=2 
                 return gr.update(visible=True)
             return gr.update(visible=False)
         image_tab.select(check_unsaved_settings, inputs=[], outputs=[modal_unsaved])
         video_tab.select(check_unsaved_settings, inputs=[], outputs=[modal_unsaved])
         webcam_tab.select(check_unsaved_settings, inputs=[], outputs=[modal_unsaved])
             
-            #gr.themes.builder() #BROKEN
+            #gr.themes.builder() #BROKEN :()
     #demo.Interface.tabs[-1].selected = load_settings
-    #settings_tab.
     demo.load(on_page_load, inputs=[], outputs=[model_load_logs, model_selection])
     
-    #print(demo.blocks)
-# if __name__ == "__main__":
-#     status = load_settings()
-#     print(status)
-#     demo.launch(share=False)
 
+# START THE APPLICATION:
 
 status = load_settings()
 print(status)
