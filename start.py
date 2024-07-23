@@ -354,16 +354,16 @@ def yolov8_process_image(img, print_info):
     for person_idx in range(people_count):
         keypoints = results[0].keypoints.xy[person_idx]
         keypoints_scaled = [(int(x), int(y)) for x, y in keypoints]
-        for x, y in keypoints_scaled:
-            if x != 0 and y != 0:
-                cv.circle(image, (x, y), int(keypoints_size*scale), (keypoints_color.r, keypoints_color.g, keypoints_color.b), int(keypoints_size*scale/2))
         for (start_idx, end_idx) in KEYPOINT_PAIRS:
             if start_idx < len(keypoints_scaled) and end_idx < len(keypoints_scaled):
                 start_point = keypoints_scaled[start_idx]
                 end_point = keypoints_scaled[end_idx]
                 if start_point != (0, 0) and end_point != (0, 0):
                     cv.line(image, start_point, end_point, (line_color.r, line_color.g, line_color.b), int(line_size))
-
+        for x, y in keypoints_scaled:
+            if x != 0 and y != 0:
+                cv.circle(image, (x, y), int(keypoints_size*scale), (keypoints_color.r, keypoints_color.g, keypoints_color.b), int(keypoints_size*scale/2))
+        
     timer_end = time.perf_counter()
     if print_info == True:
         gr.Info(f"Processing Finished\nafter {timer_end-timer_start:0.4f} seconds", duration=5)
@@ -373,23 +373,26 @@ def yolov8_process_image(img, print_info):
 ### VID TO VID
 import subprocess
 def yolov8_process_video(video, model_name):
+    timer_start = time.perf_counter()
     global frames_folder
+    global model
     if video == None:
-        gr.Error(f"Video is empty !", duration=3)
-
+        raise gr.Error("No selected video found, please upload a video first 💥!", duration=5)
+    if model is None:
+        raise gr.Error("Please select and load model first 💥!", duration=5)
     # Create 'frames' folder if it doesn't exist
     if not os.path.exists(frames_folder):
         os.makedirs(frames_folder)
     else:
-        print("Normally frames would be deleted, not now")
-        # Delete only frame files from the 'frames' folder if it already exists
-        # print(f"Deleting old video frames from {frames_folder}")
-        # for filename in os.listdir(frames_folder):
-        #     del_file_path = os.path.join(frames_folder, filename)
-        #     try:
-        #         os.remove(del_file_path)
-        #     except Exception as e:
-        #         print(f"Failed to delete {del_file_path}. Reason: {e}")
+        #print("Normally frames would be deleted, not now")
+        #Delete only frame files from the 'frames' folder if it already exists
+        print(f"Deleting old video frames from {frames_folder}")
+        for filename in os.listdir(frames_folder):
+            del_file_path = os.path.join(frames_folder, filename)
+            try:
+                os.remove(del_file_path)
+            except Exception as e:
+                gr.Error(f"Failed to delete {del_file_path}. Reason: {e}")
 
     # Extract frames using ffmpeg
     # with open(temp_video_path, "wb") as f:
@@ -397,7 +400,7 @@ def yolov8_process_video(video, model_name):
 
     # Extract frames using ffmpeg
     print(f"Extracting frames from {video}")
-    subprocess.run(['ffmpeg', '-i', video, os.path.join(frames_folder, 'frame%d.jpg')])
+    subprocess.run(['ffmpeg//ffmpeg_essentials.exe', '-i', video, os.path.join(frames_folder, 'frame%d.jpg')])
     # Uncomment this after installing FFMPEG
     
 
@@ -426,34 +429,29 @@ def yolov8_process_video(video, model_name):
         print(f"New folder created: {new_folder_path}")
 
         # Get the framerate of the original video
-        # Open the video file
-        video = cv.VideoCapture(file_path)
+        video_cv = cv.VideoCapture(video)
+        frame_rate = video_cv.get(cv.CAP_PROP_FPS)
+        video_cv.release()
 
-        # Get the frame rate of the video
-        frame_rate = video.get(cv.CAP_PROP_FPS)
-
-        # Release the video capture object
-        video.release()
-
-        output_video_path = os.path.join(f"{os.path.splitext(os.path.basename(file_path))[0]} [model={model_name} filetype={file_type} confidence={confidence}].mp4")
+        output_video_path = os.path.join(f"{os.path.splitext(os.path.basename(video))[0]} [model={model_name} filetype={file_type} confidence={confidence}].mp4")
 
         if os.path.exists(output_video_path):
             try:
                 os.remove(output_video_path)
             except Exception as e:
-                print(f"Failed to delete {output_video_path}. Reason: {e}")
+                gr.Error(f"Failed to delete {output_video_path}. Reason: {e}")
 
         # Generate MP4 video using ffmpeg
         frame_name= f"frame%d.{file_type}";
-        subprocess.run(['ffmpeg', '-framerate', str(frame_rate), '-i', os.path.join(new_folder_path, frame_name), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', output_video_path])
-
+        subprocess.run(['ffmpeg//ffmpeg_essentials.exe', '-framerate', str(frame_rate), '-i', os.path.join(new_folder_path, frame_name), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', output_video_path])
         print(f"Video generated: {output_video_path}")
-        gr.Info("Successfully Crated a Video")
 
     else:
-        print("ERROR - No new folder created")
-
-    return f"TEST: {existing_folders_before}", output_video_path
+        gr.Error("ERROR - No new folder created")
+    timer_end = time.perf_counter()
+    final_size = os.path.getsize(output_video_path) / (1024 * 1024)
+    gr.Info(f"Successfully Crated a Video in {timer_end-timer_start:0.4f} seconds")
+    return f"OK.\nIt took {timer_end-timer_start:0.4f} seconds,\nFPS:{frame_rate}\nFinal Size:{final_size:.2f} MB", output_video_path
 
 ### WEBCAM
 def yolov8_process_webcam():
@@ -503,13 +501,34 @@ css = """
 }
 """
 # TESTS GO HERE
+def ffmpeg_test():
+    # Define the path to the ffmpeg executable
+    ffmpeg_path = "ffmpeg//ffmpeg_essentials.exe"  # Replace this with the actual path to ffmpeg on your system
+
+    # Define the ffmpeg command you want to run
+    command = [
+        ffmpeg_path,
+        "-version"  # The -version flag to get version info
+    ]
+
+    # Run the ffmpeg command and capture the output
+    try:
+        result = subprocess.run(command, check=True, text=True, capture_output=True)
+        print("ffmpeg version information:")
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        return f"An error occurred: {e}"
+    return "OK"
 ### GRADIO
 tabs = ["img2img", "vid2vid", "webcam", "settings"]
 block = gr.Blocks(title=page_title, css=css).queue() #css="footer {visibility: hidden}", 
 #with gr.Blocks(title=page_title, css=css) as demo:
 with block as demo:
     gr.Markdown('# Human Pose Detection')
-
+    with gr.Group():
+        test_btn = gr.Button(value="FFMPEG TEST")
+        out_test = gr.Textbox(label="FFMPEG TEST")
+        test_btn.click(ffmpeg_test, inputs=[], outputs=[out_test])
     # Github icon
     #github_icon = gr.Gallery(values=["logo\\github-mark-white.png"], interactive=False) # I have no idea how Gradio can display logos o.O
     #
@@ -543,10 +562,10 @@ with block as demo:
         with gr.Tab(tabs[1]) as video_tab:
             with gr.Group():
                 tab_name = gr.Text(value=tabs[1], visible=False)
-                video = gr.Video(label="Video") #, sources=['upload']
+                video = gr.Video(label="Video", elem_id="input_video") #, sources=['upload']
                 video_btn = gr.Button(value="Process Video")
             with gr.Group():
-                video_output = gr.Video(label="Video Output")
+                video_output = gr.Video(label="Video Output", elem_id="output_video")
                 video_out_text = gr.Text(value="process video to get an output", label="Output Logs")
 
 
@@ -615,14 +634,20 @@ with block as demo:
 
             with Modal(visible=False) as modal:
                 gr.Markdown("# Changelog")
-                # with gr.Accordion(label='# Version 0.3 - Ongoing', open=True):
-                #     with gr.Group():
-                #         with gr.Accordion(label='# Version 0.3.0 - Ongoing', open=True):
-                #             gr.Markdown("- come back here later")
-                with gr.Accordion(label='# Version 0.2 - Newest version released on 22/07/2024', open=True):
+                with gr.Accordion(label='# Version 0.3 - Ongoing', open=True):
                     with gr.Group():
-                        with gr.Accordion(label='# Version 0.2.9 - 23/07/2024', open=True):
-                            with gr.Accordion(label='# Version 0.2.9.5 - 23/07/2024', open=True):
+                        with gr.Accordion(label='# Version 0.3.0 - Newest version released on 23/07/2024', open=True):
+                            gr.Markdown("- vid2vid - other small bug fixes")
+                            gr.Markdown("- vid2vid - css preparations")
+                            gr.Markdown("- vid2vid - output video name changed from placeholder")
+                            gr.Markdown("- vid2vid - fps is now checked properly (no more 30 fps locked)")
+                            gr.Markdown("- vid2vid - old frames now delete properly")
+                            gr.Markdown("- ffmpeg is now build in (no need to install it locally)")
+                            gr.Markdown("- Keypoints now draw over Lines for better visibility")
+                with gr.Accordion(label='# Version 0.2 - Newest version released on 23/07/2024', open=False):
+                    with gr.Group():
+                        with gr.Accordion(label='# Version 0.2.9 - 23/07/2024', open=False):
+                            with gr.Accordion(label='# Version 0.2.9.5 - 23/07/2024', open=False):
                                 gr.Markdown("- Unsaved changes modal - colored squares added to color changes")
                                 gr.Markdown("- Unsaved changes modal - now displays list of changes made")
                                 gr.Markdown("- Unsaved changes modal - many bug fixes")
