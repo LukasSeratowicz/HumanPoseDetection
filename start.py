@@ -499,36 +499,19 @@ css = """
 #modal_unsaved > div {
     width: 40% !important;
 }
+
 """
+
+# #input_video, #output_video {
+#     max-width: 25% !important;
+# }
 # TESTS GO HERE
-def ffmpeg_test():
-    # Define the path to the ffmpeg executable
-    ffmpeg_path = "ffmpeg//ffmpeg_essentials.exe"  # Replace this with the actual path to ffmpeg on your system
-
-    # Define the ffmpeg command you want to run
-    command = [
-        ffmpeg_path,
-        "-version"  # The -version flag to get version info
-    ]
-
-    # Run the ffmpeg command and capture the output
-    try:
-        result = subprocess.run(command, check=True, text=True, capture_output=True)
-        print("ffmpeg version information:")
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        return f"An error occurred: {e}"
-    return "OK"
 ### GRADIO
 tabs = ["img2img", "vid2vid", "webcam", "settings"]
 block = gr.Blocks(title=page_title, css=css).queue() #css="footer {visibility: hidden}", 
 #with gr.Blocks(title=page_title, css=css) as demo:
 with block as demo:
     gr.Markdown('# Human Pose Detection')
-    with gr.Group():
-        test_btn = gr.Button(value="FFMPEG TEST")
-        out_test = gr.Textbox(label="FFMPEG TEST")
-        test_btn.click(ffmpeg_test, inputs=[], outputs=[out_test])
     # Github icon
     #github_icon = gr.Gallery(values=["logo\\github-mark-white.png"], interactive=False) # I have no idea how Gradio can display logos o.O
     #
@@ -548,25 +531,27 @@ with block as demo:
     with gr.Accordion(label='Step 2: Choose a mode and run it', open=True):
         ### Image To Image
         with gr.Tab(tabs[0]) as image_tab:
-            with gr.Group():
+            with gr.Row():
+                #with gr.Group():
                 tab_name = gr.Text(value=tabs[0], visible=False)
                 image = gr.Image(label="Image")
-                process_btn = gr.Button(value="Process Image")
-            with gr.Group():
+                #with gr.Group():
                 out_image = gr.Image(label="Output Image")
-                work_around_false = gr.Checkbox(label="If you see this, there is something wrong !", value=False, visible=False)
-                out_text = gr.Text(value="process image to get an output", label="Output Logs")
+            work_around_false = gr.Checkbox(label="If you see this, there is something wrong !", value=False, visible=False)
+            process_btn = gr.Button(value="Process Image")
+            out_text = gr.Text(value="process image to get an output", label="Output Logs")
             process_btn.click(yolov8_process_image,inputs=[image, work_around_false],outputs=[out_text, out_image])
 
         ### Video To Video
         with gr.Tab(tabs[1]) as video_tab:
-            with gr.Group():
+            with gr.Row():
+                #with gr.Group(elem_id="input_video_group"):
                 tab_name = gr.Text(value=tabs[1], visible=False)
                 video = gr.Video(label="Video", elem_id="input_video") #, sources=['upload']
-                video_btn = gr.Button(value="Process Video")
-            with gr.Group():
+                #with gr.Group(elem_id="output_video_group"):
                 video_output = gr.Video(label="Video Output", elem_id="output_video")
-                video_out_text = gr.Text(value="process video to get an output", label="Output Logs")
+            video_btn = gr.Button(value="Process Video")
+            video_out_text = gr.Text(value="process video to get an output", label="Output Logs")
 
 
             video_btn.click(yolov8_process_video,inputs=[video, model_selection],outputs=[video_out_text, video_output])
@@ -636,18 +621,22 @@ with block as demo:
                 gr.Markdown("# Changelog")
                 with gr.Accordion(label='# Version 0.3 - Ongoing', open=True):
                     with gr.Group():
-                        with gr.Accordion(label='# Version 0.3.0 - Newest version released on 23/07/2024', open=True):
-                            gr.Markdown("- vid2vid - other small bug fixes")
-                            gr.Markdown("- vid2vid - css preparations")
-                            gr.Markdown("- vid2vid - output video name changed from placeholder")
-                            gr.Markdown("- vid2vid - fps is now checked properly (no more 30 fps locked)")
-                            gr.Markdown("- vid2vid - old frames now delete properly")
-                            gr.Markdown("- ffmpeg is now build in (no need to install it locally)")
+                        with gr.Accordion(label='# Version 0.3.1 - Newest version released on 23/07/2024', open=True):
+                            gr.Markdown("- Changelog - now opens newest sub pages automatically on first open")
+                            gr.Markdown("- vid2vid - videos now don't scale like crazy in UI (if its not vertical, still looking for better solution)")
+                            gr.Markdown("- Removed FFMPEG testing button (ups)")
+                        with gr.Accordion(label='# Version 0.3.0 - Newest version released on 23/07/2024', open=False):
                             gr.Markdown("- Keypoints now draw over Lines for better visibility")
+                            gr.Markdown("- ffmpeg is now build in (no need to install it locally)")
+                            gr.Markdown("- vid2vid - old frames now delete properly")
+                            gr.Markdown("- vid2vid - fps is now checked properly (no more 30 fps locked)")
+                            gr.Markdown("- vid2vid - output video name changed from placeholder")
+                            gr.Markdown("- vid2vid - css preparations")
+                            gr.Markdown("- vid2vid - other small bug fixes")
                 with gr.Accordion(label='# Version 0.2 - Newest version released on 23/07/2024', open=False):
                     with gr.Group():
-                        with gr.Accordion(label='# Version 0.2.9 - 23/07/2024', open=False):
-                            with gr.Accordion(label='# Version 0.2.9.5 - 23/07/2024', open=False):
+                        with gr.Accordion(label='# Version 0.2.9 - 23/07/2024', open=True):
+                            with gr.Accordion(label='# Version 0.2.9.5 - 23/07/2024', open=True):
                                 gr.Markdown("- Unsaved changes modal - colored squares added to color changes")
                                 gr.Markdown("- Unsaved changes modal - now displays list of changes made")
                                 gr.Markdown("- Unsaved changes modal - many bug fixes")
