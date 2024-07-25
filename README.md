@@ -59,19 +59,37 @@ To set up the project locally, follow these steps:
    ```
 2. Copy and paste the adress into your browser
    
+***
 ## Changelog
 
-### Version 0.3 - Ongoing
+***
+### Version 0.4 - Ongoing
+
+#### Version 0.4.1 - (NEW) Released on 25/07/2024
+##### Version 0.4.1.5 - 25/07/2024
+- Changelog - Changed Dates Names
+
+##### Version 0.4.1.0 - 25/07/2024
+- Settings - Bug Fix - dictionary changed size during iteration
+- Changelog - Renamed one past update description to fit better
+  
+#### Version 0.4.0 - Released on 25/07/2024
+- Settings - Each Lines and Keypoints color can now be changed
+- General - Each Line and Keypoint now has it's own color
+- General - Slightly faster model load time
+
+***
+### Version 0.3 - Released on 25/07/2024
 
 #### Version 0.3.2 - Released on 25/07/2024
 - General - Updated Gradio to 4.39.0
 
-#### Version 0.3.1 - Released on 24/07/2024
+#### Version 0.3.1 - 24/07/2024
 - Changelog - now opens newest sub pages automatically on first open
 - vid2vid - videos now don't scale like crazy in UI (if it's not vertical, still looking for better solution)
 - Removed FFMPEG testing button (oops)
 
-#### Version 0.3.0 - Released on 23/07/2024
+#### Version 0.3.0 - 23/07/2024
 - Keypoints now draw over Lines for better visibility
 - ffmpeg is now built-in (no need to install it locally)
 - vid2vid - old frames now delete properly
@@ -80,6 +98,7 @@ To set up the project locally, follow these steps:
 - vid2vid - css preparations
 - vid2vid - other small bug fixes
 
+***
 ### Version 0.2 - Released on 23/07/2024
 
 #### Version 0.2.9 - 23/07/2024
@@ -130,6 +149,7 @@ To set up the project locally, follow these steps:
 - Model Info Text Box added
 - Various checks for wrong input added
 
+***
 ### Version 0.1 - Released on 11/07/2024
 - Basic UI Implemented
 - Loading yolov8 model added
