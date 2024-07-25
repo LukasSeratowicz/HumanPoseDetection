@@ -24,6 +24,23 @@ file_type_list = ["jpg","png"]
 frames_folder = 'frames/'
 unsaved_settings = False
 first_time_bug_fix = 5
+KEYPOINT_PAIRS = [
+    (0, 1), (0, 2), (2, 4), (1, 3), (0, 5), (0, 6), # Head
+    (5, 7), (7, 9),  # Left arm
+    (6, 8), (8, 10),   # Right arm
+    (6, 12), (5, 11), (6, 5), (12, 11),  # Torso
+    (11, 13), (13, 15),  # Left leg
+    (12, 14), (14, 16)  # Right leg
+]
+index_keypoints_head = 0
+index_keypoints_torso = 5
+index_keypoints_arms = 7
+index_keypoints_legs = 16
+index_lines_head = 0
+index_lines_torso = 10
+index_lines_arms = 6
+index_lines_legs = 14
+
 # Settings Editable
 class Color:
     def __init__(self, r=0, g=0, b=0):
@@ -46,8 +63,32 @@ def from_hex(hex_str):
     r, g, b = tuple(int(hex_str[i:i+2], 16) for i in (0, 2, 4))
     return Color(r, g, b)
     
-keypoints_color = Color(r=0, g=255, b=0)
-line_color = Color(r=0, g=0, b=255)
+#keypoints_color = Color(r=0, g=255, b=0)
+#line_color = Color(r=0, g=0, b=255)
+
+lines_colors = [
+    Color(84, 255, 0), Color(84, 255, 0), Color(84, 255, 0), Color(84, 255, 0), Color(84, 255, 0), Color(84, 255, 0),# Head
+    Color(55, 125, 255), Color(55, 125, 255),  # Left arm
+    Color(55, 125, 255), Color(55, 125, 255),   # Right arm
+    Color(241, 55, 255), Color(241, 55, 255), Color(241, 55, 255), Color(241, 55, 255),  # Torso
+    Color(255, 155, 55), Color(255, 155, 55),  # Left leg
+    Color(255, 155, 55), Color(255, 155, 55)  # Right leg
+]
+
+keypoints_colors = [
+    Color(84, 255, 0), Color(84, 255, 0), Color(84, 255, 0), Color(84, 255, 0), Color(84, 255, 0),# Head 0,1,2,3,4
+    Color(241, 55, 255), Color(241, 55, 255), # Torso 5,6
+    Color(55, 125, 255), # Right arm 7
+    Color(55, 125, 255), # Left arm 8
+    Color(55, 125, 255), # Right arm 9
+    Color(55, 125, 255), # Left arm 10
+    Color(241, 55, 255), Color(241, 55, 255), # Torso 11,12
+    Color(255, 155, 55), # Left leg 13
+    Color(255, 155, 55), # Right leg 14
+    Color(255, 155, 55), # Left leg 15
+    Color(255, 155, 55) # Right leg 16
+]
+
 keypoints_size = 2
 line_size = 4
 
@@ -57,15 +98,6 @@ confidence = 0.3
 
 file_type = "jpg"
 
-def change_keypoints_color(red,green,blue):
-    keypoints_color.r = red
-    keypoints_color.g = green
-    keypoints_color.b = blue
-def change_line_color(red,green,blue):
-    line_color.r = red
-    line_color.g = green
-    line_color.b = blue
-
 def hex_to_rgb(hex_color):
     hex_color = hex_color.lstrip('#')
     return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
@@ -74,9 +106,42 @@ def save_settings():
     global settings_folder
     global settings_file_name
     settings = {
-        'keypoints_color': keypoints_color.to_dict(),
+        'keypoints_color_index0': keypoints_colors[0].to_dict(),
+        'keypoints_color_index1': keypoints_colors[1].to_dict(),
+        'keypoints_color_index2': keypoints_colors[2].to_dict(),
+        'keypoints_color_index3': keypoints_colors[3].to_dict(),
+        'keypoints_color_index4': keypoints_colors[4].to_dict(),
+        'keypoints_color_index5': keypoints_colors[5].to_dict(),
+        'keypoints_color_index6': keypoints_colors[6].to_dict(),
+        'keypoints_color_index7': keypoints_colors[7].to_dict(),
+        'keypoints_color_index8': keypoints_colors[8].to_dict(),
+        'keypoints_color_index9': keypoints_colors[9].to_dict(),
+        'keypoints_color_index10': keypoints_colors[10].to_dict(),
+        'keypoints_color_index11': keypoints_colors[11].to_dict(),
+        'keypoints_color_index12': keypoints_colors[12].to_dict(),
+        'keypoints_color_index13': keypoints_colors[13].to_dict(),
+        'keypoints_color_index14': keypoints_colors[14].to_dict(),
+        'keypoints_color_index15': keypoints_colors[15].to_dict(),
+        'keypoints_color_index16': keypoints_colors[16].to_dict(),
+        'lines_color_index0': lines_colors[0].to_dict(),
+        'lines_color_index1': lines_colors[1].to_dict(),
+        'lines_color_index2': lines_colors[2].to_dict(),
+        'lines_color_index3': lines_colors[3].to_dict(),
+        'lines_color_index4': lines_colors[4].to_dict(),
+        'lines_color_index5': lines_colors[5].to_dict(),
+        'lines_color_index6': lines_colors[6].to_dict(),
+        'lines_color_index7': lines_colors[7].to_dict(),
+        'lines_color_index8': lines_colors[8].to_dict(),
+        'lines_color_index9': lines_colors[9].to_dict(),
+        'lines_color_index10': lines_colors[10].to_dict(),
+        'lines_color_index11': lines_colors[11].to_dict(),
+        'lines_color_index12': lines_colors[12].to_dict(),
+        'lines_color_index13': lines_colors[13].to_dict(),
+        'lines_color_index14': lines_colors[14].to_dict(),
+        'lines_color_index15': lines_colors[15].to_dict(),
+        'lines_color_index16': lines_colors[16].to_dict(),
+        'lines_color_index17': lines_colors[17].to_dict(),
         'keypoints_size': keypoints_size,
-        'line_color': line_color.to_dict(),
         'line_size': line_size,
         'preload_weights': preload_weights,
         'confidence': confidence,
@@ -93,7 +158,16 @@ def save_settings():
     with open(settings_file_path, 'w') as file:
         json.dump(settings, file, indent=4)
 
-def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new_keypoints_size, new_line_size, new_confidence, new_file_type):
+def apply_settings(
+        new_keypoints_color_head, 
+        new_keypoints_color_torso,
+        new_keypoints_color_arms,
+        new_keypoints_color_legs,
+        new_lines_color_head, 
+        new_lines_color_torso, 
+        new_lines_color_arms, 
+        new_lines_color_legs, 
+        new_preload_weights, new_keypoints_size, new_line_size, new_confidence, new_file_type):
     global preload_weights
     global keypoints_size
     global line_size
@@ -101,15 +175,26 @@ def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new
     global file_type
     global unsaved_settings
     global unsaved_settings_changes
-    k_r, k_g, k_b = hex_to_rgb(new_keypoints_color)
-    keypoints_color.r = k_r
-    keypoints_color.g = k_g
-    keypoints_color.b = k_b
+    global keypoints_colors
+    global lines_colors
+    k_r, k_g, k_b = hex_to_rgb(new_keypoints_color_head)
+    keypoints_colors[0:5] = [Color(k_r, k_g, k_b)] * 5
+    k_r, k_g, k_b = hex_to_rgb(new_keypoints_color_torso)
+    keypoints_colors[5:7] = [Color(k_r, k_g, k_b)] * 2
+    keypoints_colors[11:13] = [Color(k_r, k_g, k_b)] * 2
+    k_r, k_g, k_b = hex_to_rgb(new_keypoints_color_arms)
+    keypoints_colors[7:11] = [Color(k_r, k_g, k_b)] * 4
+    k_r, k_g, k_b = hex_to_rgb(new_keypoints_color_legs)
+    keypoints_colors[13:17] = [Color(k_r, k_g, k_b)] * 4
 
-    l_r, l_g, l_b = hex_to_rgb(new_line_color)
-    line_color.r = l_r
-    line_color.g = l_g
-    line_color.b = l_b
+    l_r, l_g, l_b = hex_to_rgb(new_lines_color_head)
+    lines_colors[0:6] = [Color(l_r, l_g, l_b)] * 6
+    l_r, l_g, l_b = hex_to_rgb(new_lines_color_arms)
+    lines_colors[6:10] = [Color(l_r, l_g, l_b)] * 4
+    l_r, l_g, l_b = hex_to_rgb(new_lines_color_torso)
+    lines_colors[10:14] = [Color(l_r, l_g, l_b)] * 4
+    l_r, l_g, l_b = hex_to_rgb(new_lines_color_legs)
+    lines_colors[14:18] = [Color(l_r, l_g, l_b)] * 4
 
     preload_weights = new_preload_weights
 
@@ -128,13 +213,13 @@ def apply_settings(new_keypoints_color, new_line_color, new_preload_weights, new
 
 def load_settings():
     global settings_loaded
-    global keypoints_color
     global keypoints_size
-    global line_color
     global line_size
     global preload_weights
     global confidence
     global file_type
+    global keypoints_colors
+    global lines_colors
     settings_file_path = os.path.join(settings_folder, settings_file_name)
     
     if not os.path.isfile(settings_file_path):
@@ -145,26 +230,30 @@ def load_settings():
     
     with open(settings_file_path, 'r') as file:
         settings = json.load(file)
-        
-        keypoints_color = Color.from_dict(settings.get('keypoints_color', {}))
+        for i in range(len(keypoints_colors)):
+            keypoints_colors[i] = Color.from_dict(settings.get(f'keypoints_color_index{i}', {}))
+        for i in range(len(lines_colors)):
+            lines_colors[i] = Color.from_dict(settings.get(f'lines_color_index{i}', {}))
         keypoints_size = settings.get('keypoints_size', 4)
-        line_color = Color.from_dict(settings.get('line_color', {}))
         line_size = settings.get('line_size', 2)
         preload_weights = settings.get('preload_weights', True)
         confidence = settings.get('confidence', 0.3)
         file_type = settings.get('file_type', "jpg")
 
     settings_loaded = True
-    return True, "Settings file loaded successfully.", keypoints_color, keypoints_size, line_color, line_size, preload_weights, confidence, file_type
+    return True, "Settings file loaded successfully.", keypoints_colors[index_keypoints_head], keypoints_colors[index_keypoints_torso], keypoints_colors[index_keypoints_arms], keypoints_colors[index_keypoints_legs], lines_colors[index_lines_head], lines_colors[index_lines_torso], lines_colors[index_lines_arms], lines_colors[index_lines_legs], keypoints_size, line_size, preload_weights, confidence, file_type
 
 def reload_gradio_from_settings():
     global file_type
     global unsaved_settings
     global unsaved_settings_changes
+    global keypoints_colors
+    global lines_colors
+
     unsaved_settings_changes.clear()
     unsaved_settings = False
-    status = load_settings()
-    return gr.ColorPicker(value=f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"), gr.ColorPicker(value=f"#{line_color.r:02x}{line_color.g:02x}{line_color.b:02x}"),gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size"), gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size"), gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights), gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence"), gr.Radio(value=file_type)
+    _ = load_settings()
+    return gr.ColorPicker(value=f"#{keypoints_colors[index_keypoints_head].r:02x}{keypoints_colors[index_keypoints_head].g:02x}{keypoints_colors[index_keypoints_head].b:02x}"), gr.ColorPicker(value=f"#{keypoints_colors[index_keypoints_torso].r:02x}{keypoints_colors[index_keypoints_torso].g:02x}{keypoints_colors[index_keypoints_torso].b:02x}"), gr.ColorPicker(value=f"#{keypoints_colors[index_keypoints_arms].r:02x}{keypoints_colors[index_keypoints_arms].g:02x}{keypoints_colors[index_keypoints_arms].b:02x}"), gr.ColorPicker(value=f"#{keypoints_colors[index_keypoints_legs].r:02x}{keypoints_colors[index_keypoints_legs].g:02x}{keypoints_colors[index_keypoints_legs].b:02x}"), gr.ColorPicker(value=f"#{lines_colors[index_lines_head].r:02x}{lines_colors[index_lines_head].g:02x}{lines_colors[index_lines_head].b:02x}"),  gr.ColorPicker(value=f"#{lines_colors[index_lines_torso].r:02x}{lines_colors[index_lines_torso].g:02x}{lines_colors[index_lines_torso].b:02x}"),  gr.ColorPicker(value=f"#{lines_colors[index_lines_arms].r:02x}{lines_colors[index_lines_arms].g:02x}{lines_colors[index_lines_arms].b:02x}"), gr.ColorPicker(value=f"#{lines_colors[index_lines_legs].r:02x}{lines_colors[index_lines_legs].g:02x}{lines_colors[index_lines_legs].b:02x}"), gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size"), gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size"), gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights), gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence"), gr.Radio(value=file_type)
 
 class UnsavedChanges:
     def __init__(self):
@@ -216,7 +305,6 @@ def save_session():
     
     with open(session_file_name, 'w') as file:
         json.dump(session, file, indent=4)
-    print("Successfuly saved session")
 
 
 def load_session():
@@ -277,14 +365,6 @@ def reload_models():
 ### Pose Estimation AI
 file_path = os.path.dirname(os.path.realpath(__file__))
 model = None
-KEYPOINT_PAIRS = [
-    (0, 1), (0, 2), (2, 4), (1, 3), (0, 5), (0, 6), # Head
-    (5, 7), (7, 9),  # Left arm
-    (6, 8), (8, 10),   # Right arm
-    (6, 12), (5, 11), (6, 5), (12, 11),  # Torso
-    (11, 13), (13, 15),  # Left leg
-    (12, 14), (14, 16)  # Right leg
-]
 
 def yolov8_load_model(model_name):
     global session_model_name
@@ -295,11 +375,9 @@ def yolov8_load_model(model_name):
     model = YOLO("models//"+model_name)
     if preload_weights:
        load_weights()
-    model_info = torch.load("models//"+model_name, map_location=torch.device('cpu'))
     total_params = sum(p.numel() for p in model.parameters())
     formatted_params = '{:,}'.format(total_params).replace(',', '.')
     file_size = os.path.getsize("models//"+model_name) / (1024 * 1024)
-    model_info = None
     session_model_name = model_name
     session_model_load_logs = f"Model: {model_name}\nSize: {file_size:.2f} MB\nParameters: {formatted_params}"
     save_session()
@@ -316,6 +394,8 @@ def load_weights():
 def yolov8_process_image(img, print_info):
     timer_start = time.perf_counter()
     global model
+    global keypoints_colors
+    global lines_colors
     if img is None:
         raise gr.Error("No selected image found, please upload an image first 💥!", duration=5)
     if model is None:
@@ -341,16 +421,22 @@ def yolov8_process_image(img, print_info):
     for person_idx in range(people_count):
         keypoints = results[0].keypoints.xy[person_idx]
         keypoints_scaled = [(int(x), int(y)) for x, y in keypoints]
-        for (start_idx, end_idx) in KEYPOINT_PAIRS:
+        for i, (start_idx, end_idx) in enumerate(KEYPOINT_PAIRS):
             if start_idx < len(keypoints_scaled) and end_idx < len(keypoints_scaled):
                 start_point = keypoints_scaled[start_idx]
                 end_point = keypoints_scaled[end_idx]
+                line_color = lines_colors[i]
                 if start_point != (0, 0) and end_point != (0, 0):
                     cv.line(img, start_point, end_point, (line_color.r, line_color.g, line_color.b), int(line_size))
-        for x, y in keypoints_scaled:
-            if x != 0 and y != 0:
-                cv.circle(img, (x, y), int(keypoints_size*scale), (keypoints_color.r, keypoints_color.g, keypoints_color.b), int(keypoints_size*scale/2))
-        
+
+        for keypoint_idx in range(len(keypoints_colors)):
+            if keypoint_idx<=16:
+                x, y = keypoints_scaled[keypoint_idx]
+                if x != 0 and y != 0:
+                    keypoint_color = keypoints_colors[keypoint_idx]
+                    cv.circle(img, (x, y), int(keypoints_size*scale), (keypoint_color.r, keypoint_color.g, keypoint_color.b), int(keypoints_size*scale/2))
+            else:
+                gr.Warning(f"There is an additional Keypoint that should not be there! {keypoint_idx}")
     timer_end = time.perf_counter()
     if print_info == True:
         gr.Info(f"Processing Finished\nafter {timer_end-timer_start:0.4f} seconds", duration=5)
@@ -534,16 +620,27 @@ with block as demo:
 
         ### Settings
         with gr.Tab(tabs[3]) as settings_tab:
-            with gr.Accordion(label='Global Settings', open=True):
+            with gr.Accordion(label='Keypoints and Lines Settings', open=True):
                 with gr.Row():
                     with gr.Column():
-                        with gr.Group():
-                            picker_keypoints_color = gr.ColorPicker(label="Keypoints Color", value="#00FF00")
-                            slider_keypoints_size = gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size")
+                        with gr.Accordion(label='Keypoints', open=True):
+                            with gr.Group():
+                                with gr.Row():
+                                    picker_keypoints_color_head = gr.ColorPicker(label="Head", value="#00FF00")
+                                    picker_keypoints_color_torso = gr.ColorPicker(label="Torso", value="#00FF00")
+                                    picker_keypoints_color_arms = gr.ColorPicker(label="Arms", value="#00FF00")
+                                    picker_keypoints_color_legs = gr.ColorPicker(label="Legs", value="#00FF00")
+                                slider_keypoints_size = gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Size")
                     with gr.Column():
-                        with gr.Group():
-                            picker_lines_color = gr.ColorPicker(label="Lines Color", value="#0000FF")
-                            slider_lines_size = gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size")
+                        with gr.Accordion(label='Lines', open=True):
+                            with gr.Group():
+                                with gr.Row():
+                                    picker_lines_color_head = gr.ColorPicker(label="Head", value="#00FF00")
+                                    picker_lines_color_torso = gr.ColorPicker(label="Torso", value="#00FF00")
+                                    picker_lines_color_arms = gr.ColorPicker(label="Arms", value="#00FF00")
+                                    picker_lines_color_legs = gr.ColorPicker(label="Legs", value="#0000FF")
+                                slider_lines_size = gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Size")
+            with gr.Accordion(label='Model Settings', open=True):
                 with gr.Group():
                     settings_preload_weights = gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights)
                     settings_confidence = gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence")
@@ -568,9 +665,17 @@ with block as demo:
                 if settings_loaded:
                    unsaved_settings = True
 
-            picker_keypoints_color.change(lambda value: settings_changed('[global] keypoints color', value), inputs=[picker_keypoints_color], outputs=[])
+            picker_keypoints_color_head.change(lambda value: settings_changed('[color] keypoints head', value), inputs=[picker_keypoints_color_head], outputs=[])
+            picker_keypoints_color_torso.change(lambda value: settings_changed('[color] keypoints torso', value), inputs=[picker_keypoints_color_torso], outputs=[])
+            picker_keypoints_color_arms.change(lambda value: settings_changed('[color] keypoints arms', value), inputs=[picker_keypoints_color_arms], outputs=[])
+            picker_keypoints_color_legs.change(lambda value: settings_changed('[color] keypoints legs', value), inputs=[picker_keypoints_color_legs], outputs=[])
+            
+            picker_lines_color_head.change(lambda value: settings_changed('[color] lines head', value), inputs=[picker_lines_color_head], outputs=[])
+            picker_lines_color_torso.change(lambda value: settings_changed('[color] lines torso', value), inputs=[picker_lines_color_torso], outputs=[])
+            picker_lines_color_arms.change(lambda value: settings_changed('[color] lines arms', value), inputs=[picker_lines_color_arms], outputs=[])
+            picker_lines_color_legs.change(lambda value: settings_changed('[color] lines legs', value), inputs=[picker_lines_color_legs], outputs=[])
+            
             slider_keypoints_size.change(lambda value: settings_changed('[global] keypoints size', value), inputs=[slider_keypoints_size], outputs=[])
-            picker_lines_color.change(lambda value: settings_changed('[global] lines color', value), inputs=[picker_lines_color], outputs=[])
             slider_lines_size.change(lambda value: settings_changed('[global] lines size', value), inputs=[slider_lines_size], outputs=[])
             settings_preload_weights.change(lambda value: settings_changed('[global] preload weight', value), inputs=[settings_preload_weights], outputs=[])
             settings_confidence.change(lambda value: settings_changed('[global] confidence', value), inputs=[settings_confidence], outputs=[])
@@ -581,7 +686,13 @@ with block as demo:
 
             with Modal(visible=False) as modal:
                 gr.Markdown("# Changelog")
-                with gr.Accordion(label='# Version 0.3 - Ongoing', open=True):
+                with gr.Accordion(label='# Version 0.4 - Ongoing', open=True):
+                    with gr.Group():
+                        with gr.Accordion(label='# Version 0.4.0 - Newest version released on 25/07/2024', open=True):
+                            gr.Markdown("- Settings - Each Line and Keypoint now can be changed")
+                            gr.Markdown("- General - Each Line and Keypoint now has it's own color")
+                            gr.Markdown("- General - Slightly faster model load time")
+                with gr.Accordion(label='# Version 0.3 - Newest version released on 25/07/2024', open=False):
                     with gr.Group():
                         with gr.Accordion(label='# Version 0.3.3 - Newest version released on 25/07/2024', open=True):
                             gr.Markdown("- General - Code Clean Ups")
@@ -647,36 +758,77 @@ with block as demo:
             show_btn.click(lambda: Modal(visible=True), None, modal)
 
 
-            settings_btn.click(apply_settings,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type],outputs=[out_text])
-            settings_tab.select(reload_gradio_from_settings,inputs=[],outputs=[picker_keypoints_color,picker_lines_color, slider_keypoints_size, slider_lines_size, settings_preload_weights, settings_confidence, settings_file_type])
+            settings_btn.click(apply_settings,inputs=[
+                    picker_keypoints_color_head, picker_keypoints_color_torso, picker_keypoints_color_arms, picker_keypoints_color_legs,
+                    picker_lines_color_head, picker_lines_color_torso, picker_lines_color_arms, picker_lines_color_legs,
+                    settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type
+                ],outputs=[out_text])
+            settings_tab.select(reload_gradio_from_settings, inputs=[], outputs=[
+                    picker_keypoints_color_head, picker_keypoints_color_torso, picker_keypoints_color_arms, picker_keypoints_color_legs,
+                    picker_lines_color_head, picker_lines_color_torso, picker_lines_color_arms, picker_lines_color_legs,
+                    slider_keypoints_size, slider_lines_size, settings_preload_weights, settings_confidence, settings_file_type
+                ])
             
         with Modal(visible=False, elem_id="modal_unsaved") as modal_unsaved:
             gr.Markdown(f"# You have unsaved changes!{warning_symbol}")
             with gr.Group():
                 gr.Markdown("Are you sure you want to leave without saving your changes?")
-                @gr.render(triggers=[picker_keypoints_color.change,
-                                     slider_keypoints_size.change,
-                                     picker_lines_color.change,
-                                     slider_lines_size.change,
-                                     settings_preload_weights.change,
-                                     settings_confidence.change,
-                                     settings_file_type.change
+                @gr.render(triggers=[
+                                        picker_keypoints_color_head.change,
+                                        picker_keypoints_color_torso.change,
+                                        picker_keypoints_color_arms.change,
+                                        picker_keypoints_color_legs.change,
+                                        picker_lines_color_head.change,
+                                        picker_lines_color_torso.change,
+                                        picker_lines_color_arms.change,
+                                        picker_lines_color_legs.change,
+                                        slider_keypoints_size.change,
+                                        slider_lines_size.change,
+                                        settings_preload_weights.change,
+                                        settings_confidence.change,
+                                        settings_file_type.change
                                     ]
                             )
                 def draw_changes():
                     global unsaved_settings_changes
                     for key, value in unsaved_settings_changes.iterate_items():
                         pre_value = "Unknown"
-                        if key == '[global] keypoints color':
-                            pre_value = f"({keypoints_color.r},{keypoints_color.g},{keypoints_color.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(keypoints_color.r, keypoints_color.g, keypoints_color.b)};'>■</span>"
+                        if key == '[color] keypoints head':
+                            pre_value = f"({keypoints_colors[index_keypoints_head].r},{keypoints_colors[index_keypoints_head].g},{keypoints_colors[index_keypoints_head].b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(keypoints_colors[0].r, keypoints_colors[0].g, keypoints_colors[0].b)};'>■</span>"
                             col = from_hex(value)
                             value = f"({col.r},{col.g},{col.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(col.r, col.g, col.b)};'>■</span>"
+                        elif key == '[color] keypoints torso':
+                            pre_value = f"({keypoints_colors[index_keypoints_torso].r},{keypoints_colors[index_keypoints_torso].g},{keypoints_colors[index_keypoints_torso].b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(keypoints_colors[0].r, keypoints_colors[0].g, keypoints_colors[0].b)};'>■</span>"
+                            col = from_hex(value)
+                            value = f"({col.r},{col.g},{col.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(col.r, col.g, col.b)};'>■</span>"
+                        elif key == '[color] keypoints arms':
+                            pre_value = f"({keypoints_colors[index_keypoints_arms].r},{keypoints_colors[index_keypoints_arms].g},{keypoints_colors[index_keypoints_arms].b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(keypoints_colors[0].r, keypoints_colors[0].g, keypoints_colors[0].b)};'>■</span>"
+                            col = from_hex(value)
+                            value = f"({col.r},{col.g},{col.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(col.r, col.g, col.b)};'>■</span>"
+                        elif key == '[color] keypoints legs':
+                            pre_value = f"({keypoints_colors[index_keypoints_legs].r},{keypoints_colors[index_keypoints_legs].g},{keypoints_colors[index_keypoints_legs].b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(keypoints_colors[0].r, keypoints_colors[0].g, keypoints_colors[0].b)};'>■</span>"
+                            col = from_hex(value)
+                            value = f"({col.r},{col.g},{col.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(col.r, col.g, col.b)};'>■</span>"
+                        
+                        elif key == '[color] lines head':
+                            pre_value = f"({lines_colors[index_lines_head].r},{lines_colors[index_lines_head].g},{lines_colors[index_lines_head].b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(lines_colors[index_lines_head].r, lines_colors[index_lines_head].g, lines_colors[index_lines_head].b)};'>■</span>"
+                            col = from_hex(value)
+                            value = f"({col.r},{col.g},{col.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(col.r, col.g, col.b)};'>■</span>"
+                        elif key == '[color] lines torso':
+                            pre_value = f"({lines_colors[index_lines_torso].r},{lines_colors[index_lines_torso].g},{lines_colors[index_lines_torso].b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(lines_colors[index_lines_torso].r, lines_colors[index_lines_torso].g, lines_colors[index_lines_torso].b)};'>■</span>"
+                            col = from_hex(value)
+                            value = f"({col.r},{col.g},{col.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(col.r, col.g, col.b)};'>■</span>"
+                        elif key == '[color] lines arms':
+                            pre_value = f"({lines_colors[index_lines_arms].r},{lines_colors[index_lines_arms].g},{lines_colors[index_lines_arms].b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(lines_colors[index_lines_arms].r, lines_colors[index_lines_arms].g, lines_colors[index_lines_arms].b)};'>■</span>"
+                            col = from_hex(value)
+                            value = f"({col.r},{col.g},{col.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(col.r, col.g, col.b)};'>■</span>"
+                        elif key == '[color] lines legs':
+                            pre_value = f"({lines_colors[index_lines_legs].r},{lines_colors[index_lines_legs].g},{lines_colors[index_lines_legs].b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(lines_colors[index_lines_legs].r, lines_colors[index_lines_legs].g, lines_colors[index_lines_legs].b)};'>■</span>"
+                            col = from_hex(value)
+                            value = f"({col.r},{col.g},{col.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(col.r, col.g, col.b)};'>■</span>"
+                        
                         elif key == '[global] keypoints size':
                             pre_value = str(keypoints_size)
-                        elif key == '[global] lines color':
-                            pre_value = f"({line_color.r},{line_color.g},{line_color.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(line_color.r, line_color.g, line_color.b)};'>■</span>"
-                            col = from_hex(value)
-                            value = f"({col.r},{col.g},{col.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(col.r, col.g, col.b)};'>■</span>"
                         elif key == '[global] lines size':
                             pre_value = str(line_size)
                         elif key == '[global] preload weight':
@@ -695,11 +847,41 @@ with block as demo:
                 global unsaved_settings_changes
                 unsaved_settings_changes.clear()
                 return gr.update(visible=False)
-            def save_and_quit(picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type):
-                status = apply_settings(picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type)
+            def save_and_quit(
+                        picker_keypoints_color_head,
+                        picker_keypoints_color_torso,
+                        picker_keypoints_color_arms,
+                        picker_keypoints_color_legs,
+                        picker_lines_color_head,
+                        picker_lines_color_torso,
+                        picker_lines_color_arms,
+                        picker_lines_color_legs,
+                        settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type
+                    ):
+                status = apply_settings(
+                        picker_keypoints_color_head,
+                        picker_keypoints_color_torso,
+                        picker_keypoints_color_arms,
+                        picker_keypoints_color_legs,
+                        picker_lines_color_head,
+                        picker_lines_color_torso,
+                        picker_lines_color_arms,
+                        picker_lines_color_legs,
+                        settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type
+                    )
                 return status, gr.update(visible=False)
             discard_btn.click(discard_changes,inputs=[],outputs=[modal_unsaved])
-            save_btn.click(save_and_quit,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type],outputs=[out_text, modal_unsaved])
+            save_btn.click(save_and_quit,inputs=[
+                    picker_keypoints_color_head,
+                    picker_keypoints_color_torso,
+                    picker_keypoints_color_arms,
+                    picker_keypoints_color_legs,
+                    picker_lines_color_head,
+                    picker_lines_color_torso,
+                    picker_lines_color_arms,
+                    picker_lines_color_legs,
+                    settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type
+                ],outputs=[out_text, modal_unsaved])
         
             
 
