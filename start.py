@@ -534,7 +534,7 @@ with block as demo:
             with gr.Row():
                 #with gr.Group():
                 tab_name = gr.Text(value=tabs[0], visible=False)
-                image = gr.Image(label="Image")
+                image = gr.Image(label="Image") # Experiment with Gallery in the future for multiple inputs/outputs
                 #with gr.Group():
                 out_image = gr.Image(label="Output Image")
             work_around_false = gr.Checkbox(label="If you see this, there is something wrong !", value=False, visible=False)
@@ -621,7 +621,9 @@ with block as demo:
                 gr.Markdown("# Changelog")
                 with gr.Accordion(label='# Version 0.3 - Ongoing', open=True):
                     with gr.Group():
-                        with gr.Accordion(label='# Version 0.3.1 - Newest version released on 23/07/2024', open=True):
+                        with gr.Accordion(label='# Version 0.3.2 - Newest version released on 25/07/2024', open=True):
+                            gr.Markdown("- General - Updated Gradio to 4.39.0")
+                        with gr.Accordion(label='# Version 0.3.1 - Newest version released on 24/07/2024', open=False):
                             gr.Markdown("- Changelog - now opens newest sub pages automatically on first open")
                             gr.Markdown("- vid2vid - videos now don't scale like crazy in UI (if its not vertical, still looking for better solution)")
                             gr.Markdown("- Removed FFMPEG testing button (ups)")
