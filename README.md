@@ -65,7 +65,10 @@ To set up the project locally, follow these steps:
 ***
 ### Version 0.4 - Ongoing
 
-#### Version 0.4.1 - (NEW) Released on 25/07/2024
+#### Version 0.4.2 - (NEW) Released on 25/07/2024
+- Webcam - Bug Fix 'No People Found'
+  
+#### Version 0.4.1 - Released on 25/07/2024
 ##### Version 0.4.1.5 - 25/07/2024
 - Changelog - Changed Dates Names
 
