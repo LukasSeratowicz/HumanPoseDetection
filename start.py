@@ -697,14 +697,17 @@ with block as demo:
                 gr.Markdown("# Changelog")
                 with gr.Accordion(label='# Version 0.4 - Ongoing', open=True):
                     with gr.Group():
-                        with gr.Accordion(label='# Version 0.4.1 - Newest version released on 25/07/2024', open=True):
-                            gr.Markdown("- Settings - Bug Fix - dictionary changed size during iteration")
-                            gr.Markdown("- Changelog - Renamed one past update description to fit better")
+                        with gr.Accordion(label='# Version 0.4.1 - (NEW) Released on 25/07/2024', open=True):
+                            with gr.Accordion(label='# Version 0.4.1.5 - Released on 25/07/2024', open=True):
+                                gr.Markdown("- Changelog - Changed Dates Names")
+                            with gr.Accordion(label='# Version 0.4.1.0 - Released on 25/07/2024', open=False):
+                                gr.Markdown("- Settings - Bug Fix - dictionary changed size during iteration")
+                                gr.Markdown("- Changelog - Renamed one past update description to fit better")
                         with gr.Accordion(label='# Version 0.4.0 - 25/07/2024', open=False):
                             gr.Markdown("- Settings - Each Lines and Keypoints color can now be changed")
                             gr.Markdown("- General - Each Line and Keypoint now has it's own color")
                             gr.Markdown("- General - Slightly faster model load time")
-                with gr.Accordion(label='# Version 0.3 - Newest version released on 25/07/2024', open=False):
+                with gr.Accordion(label='# Version 0.3 - Released on 25/07/2024', open=False):
                     with gr.Group():
                         with gr.Accordion(label='# Version 0.3.3 - 25/07/2024', open=True):
                             gr.Markdown("- General - Code Clean Ups")
@@ -722,7 +725,7 @@ with block as demo:
                             gr.Markdown("- vid2vid - output video name changed from placeholder")
                             gr.Markdown("- vid2vid - css preparations")
                             gr.Markdown("- vid2vid - other small bug fixes")
-                with gr.Accordion(label='# Version 0.2 - Newest version released on 23/07/2024', open=False):
+                with gr.Accordion(label='# Version 0.2 - Released on 23/07/2024', open=False):
                     with gr.Group():
                         with gr.Accordion(label='# Version 0.2.9 - 23/07/2024', open=True):
                             with gr.Accordion(label='# Version 0.2.9.5 - 23/07/2024', open=True):
@@ -762,7 +765,7 @@ with block as demo:
                             gr.Markdown("- Model Loading Progress Bar added")
                             gr.Markdown("- Model Info Text Box added")
                             gr.Markdown("- Various checks for wrong input added")
-                with gr.Accordion(label='# Version 0.1 - Newest version released on 11/07/2024', open=False):
+                with gr.Accordion(label='# Version 0.1 - Released on 11/07/2024', open=False):
                     gr.Markdown("- Basic UI Implemented")
                     gr.Markdown("- Loading yolov8 model added")
                     gr.Markdown("- Img2Img basic functionality added")
