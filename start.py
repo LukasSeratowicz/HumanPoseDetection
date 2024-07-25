@@ -276,10 +276,19 @@ class UnsavedChanges:
     def iterate_items(self):
         for key, value in self.data.items():
             yield key, value
+    
+    def get_items(self):
+        return list(self.data.items())
 
     def size(self):
         return len(self.data)
+    
+    def remove_item_with_value(self, target_value):
+        keys_to_remove = [key for key, value in self.iterate_items() if value == target_value]
+        for key in keys_to_remove:
+            del self.data[key]
 unsaved_settings_changes = UnsavedChanges()
+is_loading_settings_changes = False
 
 # SESSION
 first_time = True
@@ -688,21 +697,24 @@ with block as demo:
                 gr.Markdown("# Changelog")
                 with gr.Accordion(label='# Version 0.4 - Ongoing', open=True):
                     with gr.Group():
-                        with gr.Accordion(label='# Version 0.4.0 - Newest version released on 25/07/2024', open=True):
-                            gr.Markdown("- Settings - Each Line and Keypoint now can be changed")
+                        with gr.Accordion(label='# Version 0.4.1 - Newest version released on 25/07/2024', open=True):
+                            gr.Markdown("- Settings - Bug Fix - dictionary changed size during iteration")
+                            gr.Markdown("- Changelog - Renamed one past update description to fit better")
+                        with gr.Accordion(label='# Version 0.4.0 - 25/07/2024', open=False):
+                            gr.Markdown("- Settings - Each Lines and Keypoints color can now be changed")
                             gr.Markdown("- General - Each Line and Keypoint now has it's own color")
                             gr.Markdown("- General - Slightly faster model load time")
                 with gr.Accordion(label='# Version 0.3 - Newest version released on 25/07/2024', open=False):
                     with gr.Group():
-                        with gr.Accordion(label='# Version 0.3.3 - Newest version released on 25/07/2024', open=True):
+                        with gr.Accordion(label='# Version 0.3.3 - 25/07/2024', open=True):
                             gr.Markdown("- General - Code Clean Ups")
-                        with gr.Accordion(label='# Version 0.3.2 - Newest version released on 25/07/2024', open=False):
+                        with gr.Accordion(label='# Version 0.3.2 - 25/07/2024', open=False):
                             gr.Markdown("- General - Updated Gradio to 4.39.0")
-                        with gr.Accordion(label='# Version 0.3.1 - Newest version released on 24/07/2024', open=False):
+                        with gr.Accordion(label='# Version 0.3.1 - 24/07/2024', open=False):
                             gr.Markdown("- Changelog - now opens newest sub pages automatically on first open")
                             gr.Markdown("- vid2vid - videos now don't scale like crazy in UI (if its not vertical, still looking for better solution)")
                             gr.Markdown("- Removed FFMPEG testing button (ups)")
-                        with gr.Accordion(label='# Version 0.3.0 - Newest version released on 23/07/2024', open=False):
+                        with gr.Accordion(label='# Version 0.3.0 - 23/07/2024', open=False):
                             gr.Markdown("- Keypoints now draw over Lines for better visibility")
                             gr.Markdown("- ffmpeg is now build in (no need to install it locally)")
                             gr.Markdown("- vid2vid - old frames now delete properly")
@@ -791,7 +803,7 @@ with block as demo:
                             )
                 def draw_changes():
                     global unsaved_settings_changes
-                    for key, value in unsaved_settings_changes.iterate_items():
+                    for key, value in unsaved_settings_changes.get_items():
                         pre_value = "Unknown"
                         if key == '[color] keypoints head':
                             pre_value = f"({keypoints_colors[index_keypoints_head].r},{keypoints_colors[index_keypoints_head].g},{keypoints_colors[index_keypoints_head].b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(keypoints_colors[0].r, keypoints_colors[0].g, keypoints_colors[0].b)};'>■</span>"
