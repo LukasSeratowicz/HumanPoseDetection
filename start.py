@@ -163,9 +163,7 @@ def reload_gradio_from_settings():
     global unsaved_settings_changes
     unsaved_settings_changes.clear()
     unsaved_settings = False
-    #print("Tab Selected")
     status = load_settings()
-    #print(status)
     return gr.ColorPicker(value=f"#{keypoints_color.r:02x}{keypoints_color.g:02x}{keypoints_color.b:02x}"), gr.ColorPicker(value=f"#{line_color.r:02x}{line_color.g:02x}{line_color.b:02x}"),gr.Slider(minimum=1,maximum=16,step=1,value=keypoints_size,label="Keypoint Size"), gr.Slider(minimum=1,maximum=16,step=1,value=line_size,label="Line Size"), gr.Checkbox(label="Preload Weights on Model Change", value=preload_weights), gr.Slider(minimum=0.01,maximum=1,step=0.01,value=confidence,label="Model Confidence"), gr.Radio(value=file_type)
 
 class UnsavedChanges:
@@ -193,6 +191,7 @@ class UnsavedChanges:
     def size(self):
         return len(self.data)
 unsaved_settings_changes = UnsavedChanges()
+
 # SESSION
 first_time = True
 session_model_name = None
@@ -233,7 +232,6 @@ def load_session():
     
     with open(session_file_path, 'r') as file:
         session = json.load(file)
-        #print(session)
         session_model_name = session.get('session_model_name', None)
         session_model_load_logs = session.get('session_model_load_logs', "No Model Loaded")
 
@@ -244,7 +242,6 @@ def on_page_load():
     global session_folder
     global session_file_name
     global first_time
-    #print("Page Reloaded")
     if first_time:
         session_model_name = None
         session_model_load_logs = "No Model Loaded"
@@ -254,8 +251,6 @@ def on_page_load():
         first_time = False
     else:
         load_session()
-        #print(f"loaded: {session_model_name} and {session_model_load_logs}")
-    #status = load_settings()
     if session_model_load_logs == None or session_model_load_logs == "":
         session_model_load_logs = "No Model Loaded"
     return gr.Textbox(label="Model Info",value=session_model_load_logs), gr.Dropdown(choices=[os.path.basename(model) for model in all_models], label="Select Yolov8 Model", value=session_model_name)
@@ -273,7 +268,6 @@ def find_pt_files(file_path):
     return glob.glob(pattern)
 
 all_models = find_pt_files(os.path.dirname(os.path.realpath(__file__))+"\\models")
-print(all_models)
 
 def reload_models():
     global all_models
@@ -298,12 +292,9 @@ def yolov8_load_model(model_name):
     if model_name is None or model_name == "":
         raise gr.Error(f"FAILED Loading Model: {model_name}", duration=5)
     global model
-    print(f"Loading models//{model_name}...")
     model = YOLO("models//"+model_name)
     if preload_weights:
        load_weights()
-    print(f"Model Loaded")
-    print(f"Checking parameters")
     model_info = torch.load("models//"+model_name, map_location=torch.device('cpu'))
     total_params = sum(p.numel() for p in model.parameters())
     formatted_params = '{:,}'.format(total_params).replace(',', '.')
@@ -330,16 +321,13 @@ def yolov8_process_image(img, print_info):
     if model is None:
         raise gr.Error("Please select and load model first 💥!", duration=5)
     results = model(source=img, show=False, conf=confidence, save=False)
-    #print(results) # DELETE LATER
     if isinstance(img, Image.Image):
         img = np.array(img)
 
     if not isinstance(img, np.ndarray):
         raise gr.Error("Image is not a NumPy array or a PIL Image", duration=5)
 
-    image = img
-    
-    height, width, _ = image.shape
+    height, width, _ = img.shape
 
     scale_width = width / 640.0
     scale_height = height / 640.0
@@ -349,7 +337,6 @@ def yolov8_process_image(img, print_info):
 
     if people_count==0:
         raise gr.Error("No people found in the picture!", duration=5)
-        return f"OK.\nPeople Count: {people_count}\nIt took {timer_end-timer_start:0.4f} seconds", image
 
     for person_idx in range(people_count):
         keypoints = results[0].keypoints.xy[person_idx]
@@ -359,15 +346,15 @@ def yolov8_process_image(img, print_info):
                 start_point = keypoints_scaled[start_idx]
                 end_point = keypoints_scaled[end_idx]
                 if start_point != (0, 0) and end_point != (0, 0):
-                    cv.line(image, start_point, end_point, (line_color.r, line_color.g, line_color.b), int(line_size))
+                    cv.line(img, start_point, end_point, (line_color.r, line_color.g, line_color.b), int(line_size))
         for x, y in keypoints_scaled:
             if x != 0 and y != 0:
-                cv.circle(image, (x, y), int(keypoints_size*scale), (keypoints_color.r, keypoints_color.g, keypoints_color.b), int(keypoints_size*scale/2))
+                cv.circle(img, (x, y), int(keypoints_size*scale), (keypoints_color.r, keypoints_color.g, keypoints_color.b), int(keypoints_size*scale/2))
         
     timer_end = time.perf_counter()
     if print_info == True:
         gr.Info(f"Processing Finished\nafter {timer_end-timer_start:0.4f} seconds", duration=5)
-    return f"OK.\nPeople Count: {people_count}\nIt took {timer_end-timer_start:0.4f} seconds, Image dim [{width}, {height}], Scales [{scale_width}, {scale_height}] fin[{scale}]", image
+    return f"OK.\nPeople Count: {people_count}\nIt took {timer_end-timer_start:0.4f} seconds, Image dim [{width}, {height}], Scales [{scale_width}, {scale_height}] fin[{scale}]", img
 
 
 ### VID TO VID
@@ -384,7 +371,6 @@ def yolov8_process_video(video, model_name):
     if not os.path.exists(frames_folder):
         os.makedirs(frames_folder)
     else:
-        #print("Normally frames would be deleted, not now")
         #Delete only frame files from the 'frames' folder if it already exists
         print(f"Deleting old video frames from {frames_folder}")
         for filename in os.listdir(frames_folder):
@@ -395,30 +381,20 @@ def yolov8_process_video(video, model_name):
                 gr.Error(f"Failed to delete {del_file_path}. Reason: {e}")
 
     # Extract frames using ffmpeg
-    # with open(temp_video_path, "wb") as f:
-    #     f.write(video)
-
-    # Extract frames using ffmpeg
     print(f"Extracting frames from {video}")
     subprocess.run(['ffmpeg//ffmpeg_essentials.exe', '-i', video, os.path.join(frames_folder, 'frame%d.jpg')])
-    # Uncomment this after installing FFMPEG
-    
-
     
     # Check the list of directories in 'raw_output' folder before running YOLOv8
     if not os.path.exists('raw_output'):
         os.makedirs('raw_output')
     existing_folders_before = os.listdir('raw_output')
 
-    print(f"Loading model : {model_name}")
     model = YOLO("models//"+model_name)
 
     frame_file_paths = [os.path.join(frames_folder, filename) for filename in os.listdir(frames_folder) if
                         filename.endswith(f".{file_type}")]
-    print(f"Processing...")
     model(source=frame_file_paths, show=False, save=True, conf=confidence, project='raw_output')
-    print(f"Processing Finished")
-    print(f"Creating MP4 file")
+
     # Check the list of directories in 'raw_output' folder after running YOLOv8
     existing_folders_after = os.listdir('raw_output')
 
@@ -426,7 +402,6 @@ def yolov8_process_video(video, model_name):
     new_folder = [folder for folder in existing_folders_after if folder not in existing_folders_before]
     if new_folder:
         new_folder_path = os.path.join('raw_output', new_folder[0])
-        print(f"New folder created: {new_folder_path}")
 
         # Get the framerate of the original video
         video_cv = cv.VideoCapture(video)
@@ -444,8 +419,6 @@ def yolov8_process_video(video, model_name):
         # Generate MP4 video using ffmpeg
         frame_name= f"frame%d.{file_type}";
         subprocess.run(['ffmpeg//ffmpeg_essentials.exe', '-framerate', str(frame_rate), '-i', os.path.join(new_folder_path, frame_name), '-c:v', 'libx264', '-pix_fmt', 'yuv420p', output_video_path])
-        print(f"Video generated: {output_video_path}")
-
     else:
         gr.Error("ERROR - No new folder created")
     timer_end = time.perf_counter()
@@ -458,24 +431,19 @@ def yolov8_process_webcam():
     global webcam_on
     webcam_on = True
     camera_id = 0
-    print(f"Turning on camera id: {camera_id}")
     cap = cv.VideoCapture(camera_id)
     if not cap.isOpened():
-        print(f"Cannot open camera id: {camera_id}")
+        gr.Error(f"Cannot open camera id: {camera_id}", duration=5)
         exit()
-    frame_width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+    #frame_width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+    #frame_height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
 
-    #print(f"width:{frame_width} | height:{frame_height}")
     processed_image = None
     while webcam_on:
         ret, frame = cap.read()
 
-        # if frame is read correctly ret is True
         if not ret:
             gr.Error("Can't receive frame (stream end?). Exiting ...")
-
-        #return "TESTING", frame
 
         status, processed_image = yolov8_process_image(frame, print_info=False)
         yield status, processed_image
@@ -502,20 +470,15 @@ css = """
 
 """
 
-# #input_video, #output_video {
-#     max-width: 25% !important;
-# }
-# TESTS GO HERE
 ### GRADIO
 tabs = ["img2img", "vid2vid", "webcam", "settings"]
-block = gr.Blocks(title=page_title, css=css).queue() #css="footer {visibility: hidden}", 
-#with gr.Blocks(title=page_title, css=css) as demo:
+block = gr.Blocks(title=page_title, css=css).queue()
+
 with block as demo:
     gr.Markdown('# Human Pose Detection')
-    # Github icon
-    #github_icon = gr.Gallery(values=["logo\\github-mark-white.png"], interactive=False) # I have no idea how Gradio can display logos o.O
-    #
+
     title_box = gr.Textbox(label="Human Pose Detection",show_label=False,value=f"Running on {device}\nUsing OpenCV v{cv.__version__} "+(f" with cuda v{torch.version.cuda}" if device == 'cuda' else "without cuda"))
+    
     with gr.Accordion(label='Step 1: Choose a Model', open=True):
         with gr.Group():
             with gr.Row():
@@ -528,6 +491,7 @@ with block as demo:
                 model_load_logs = gr.Textbox(show_label=False, value=f"No Model Loaded")
         reload_btn.click(reload_models, inputs=[], outputs=[model_selection])
         load_btn.click(yolov8_load_model, inputs=[model_selection], outputs=[model_load_logs])
+    
     with gr.Accordion(label='Step 2: Choose a mode and run it', open=True):
         ### Image To Image
         with gr.Tab(tabs[0]) as image_tab:
@@ -592,14 +556,12 @@ with block as demo:
 
             def settings_changed(widget_name, value):
                 value = f"{str(value)}"
-                #print(f"Widget Name: {widget_name} Value: {value}")
                 global unsaved_settings
                 global settings_loaded
                 global first_time_bug_fix
                 global unsaved_settings_changes
                 if first_time_bug_fix > 0:
                     first_time_bug_fix -= 1
-                    #print(f"first_time_bug_fix: {first_time_bug_fix}")
                     unsaved_settings = False
                     return
                 unsaved_settings_changes.add(widget_name, value)
@@ -621,7 +583,9 @@ with block as demo:
                 gr.Markdown("# Changelog")
                 with gr.Accordion(label='# Version 0.3 - Ongoing', open=True):
                     with gr.Group():
-                        with gr.Accordion(label='# Version 0.3.2 - Newest version released on 25/07/2024', open=True):
+                        with gr.Accordion(label='# Version 0.3.3 - Newest version released on 25/07/2024', open=True):
+                            gr.Markdown("- General - Code Clean Ups")
+                        with gr.Accordion(label='# Version 0.3.2 - Newest version released on 25/07/2024', open=False):
                             gr.Markdown("- General - Updated Gradio to 4.39.0")
                         with gr.Accordion(label='# Version 0.3.1 - Newest version released on 24/07/2024', open=False):
                             gr.Markdown("- Changelog - now opens newest sub pages automatically on first open")
@@ -680,32 +644,28 @@ with block as demo:
                     gr.Markdown("- Loading yolov8 model added")
                     gr.Markdown("- Img2Img basic functionality added")
                     gr.Markdown("- Settings added")
-                    # gr.Textbox(show_label=False, 
-                    #            value="""- Basic UI Implemented\n- Loading yolov8 model added\n- Img2Img basic functionality added
-                    #            """)
             show_btn.click(lambda: Modal(visible=True), None, modal)
 
 
             settings_btn.click(apply_settings,inputs=[picker_keypoints_color,picker_lines_color,settings_preload_weights,slider_keypoints_size,slider_lines_size, settings_confidence, settings_file_type],outputs=[out_text])
-            #demo.load(load_settings, inputs=[], outputs=[out_text])
             settings_tab.select(reload_gradio_from_settings,inputs=[],outputs=[picker_keypoints_color,picker_lines_color, slider_keypoints_size, slider_lines_size, settings_preload_weights, settings_confidence, settings_file_type])
             
         with Modal(visible=False, elem_id="modal_unsaved") as modal_unsaved:
             gr.Markdown(f"# You have unsaved changes!{warning_symbol}")
             with gr.Group():
                 gr.Markdown("Are you sure you want to leave without saving your changes?")
-                #((x+"\n" for x in unsaved_settings_changes))
                 @gr.render(triggers=[picker_keypoints_color.change,
-            slider_keypoints_size.change,
-            picker_lines_color.change,
-            slider_lines_size.change,
-            settings_preload_weights.change,
-            settings_confidence.change,
-            settings_file_type.change])
+                                     slider_keypoints_size.change,
+                                     picker_lines_color.change,
+                                     slider_lines_size.change,
+                                     settings_preload_weights.change,
+                                     settings_confidence.change,
+                                     settings_file_type.change
+                                    ]
+                            )
                 def draw_changes():
                     global unsaved_settings_changes
                     for key, value in unsaved_settings_changes.iterate_items():
-                        # FIND A BETTER, CLEANER SOLUTION FOR THIS PLZ
                         pre_value = "Unknown"
                         if key == '[global] keypoints color':
                             pre_value = f"({keypoints_color.r},{keypoints_color.g},{keypoints_color.b}) <span style='color:{'#{:02x}{:02x}{:02x}'.format(keypoints_color.r, keypoints_color.g, keypoints_color.b)};'>■</span>"
@@ -748,7 +708,7 @@ with block as demo:
             global first_time_bug_fix
             if unsaved_settings:
                 unsaved_settings=False
-                if unsaved_settings_changes.size()<=1: # I have no idea why, no one touch this
+                if unsaved_settings_changes.size()<=1:
                     first_time_bug_fix=1
                 else:
                     first_time_bug_fix=2 
@@ -758,13 +718,10 @@ with block as demo:
         video_tab.select(check_unsaved_settings, inputs=[], outputs=[modal_unsaved])
         webcam_tab.select(check_unsaved_settings, inputs=[], outputs=[modal_unsaved])
             
-            #gr.themes.builder() #BROKEN :()
-    #demo.Interface.tabs[-1].selected = load_settings
     demo.load(on_page_load, inputs=[], outputs=[model_load_logs, model_selection])
     
 
-# START THE APPLICATION:
 
-status = load_settings()
-print(status)
+# START THE APPLICATION:
+_ = load_settings()
 block.queue().launch(server_name='127.0.0.1',share=False)
