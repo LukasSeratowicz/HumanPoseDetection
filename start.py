@@ -425,7 +425,11 @@ def yolov8_process_image(img, print_info):
     people_count = len(results[0].boxes.data)
 
     if people_count==0:
-        raise gr.Error("No people found in the picture!", duration=5)
+        print(print_info)
+        if print_info == True:
+            gr.Info("No people found in the picture!", duration=5)
+        timer_end = time.perf_counter()
+        return f"NOT OK.\nPeople Count: {people_count}\nIt took {timer_end-timer_start:0.4f} seconds\nImage dim [{width}, {height}]", img
 
     for person_idx in range(people_count):
         keypoints = results[0].keypoints.xy[person_idx]
@@ -449,7 +453,7 @@ def yolov8_process_image(img, print_info):
     timer_end = time.perf_counter()
     if print_info == True:
         gr.Info(f"Processing Finished\nafter {timer_end-timer_start:0.4f} seconds", duration=5)
-    return f"OK.\nPeople Count: {people_count}\nIt took {timer_end-timer_start:0.4f} seconds, Image dim [{width}, {height}], Scales [{scale_width}, {scale_height}] fin[{scale}]", img
+    return f"OK.\nPeople Count: {people_count}\nIt took {timer_end-timer_start:0.4f} seconds\nImage dim [{width}, {height}], Scales [{scale_width}, {scale_height}] fin[{scale}]", img
 
 
 ### VID TO VID
@@ -596,7 +600,7 @@ with block as demo:
                 image = gr.Image(label="Image") # Experiment with Gallery in the future for multiple inputs/outputs
                 #with gr.Group():
                 out_image = gr.Image(label="Output Image")
-            work_around_false = gr.Checkbox(label="If you see this, there is something wrong !", value=False, visible=False)
+            work_around_false = gr.Checkbox(label="If you see this, there is something wrong !", value=True, visible=False)
             process_btn = gr.Button(value="Process Image")
             out_text = gr.Text(value="process image to get an output", label="Output Logs")
             process_btn.click(yolov8_process_image,inputs=[image, work_around_false],outputs=[out_text, out_image])
@@ -697,7 +701,9 @@ with block as demo:
                 gr.Markdown("# Changelog")
                 with gr.Accordion(label='# Version 0.4 - Ongoing', open=True):
                     with gr.Group():
-                        with gr.Accordion(label='# Version 0.4.1 - (NEW) Released on 25/07/2024', open=True):
+                        with gr.Accordion(label='# Version 0.4.2 - (NEW) Released on 25/07/2024', open=True):
+                            gr.Markdown("- Webcam - Bug Fix 'No People Found'")
+                        with gr.Accordion(label='# Version 0.4.1 - Released on 25/07/2024', open=False):
                             with gr.Accordion(label='# Version 0.4.1.5 - Released on 25/07/2024', open=True):
                                 gr.Markdown("- Changelog - Changed Dates Names")
                             with gr.Accordion(label='# Version 0.4.1.0 - Released on 25/07/2024', open=False):
