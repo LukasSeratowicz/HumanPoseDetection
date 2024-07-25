@@ -710,6 +710,7 @@ with block as demo:
                 with gr.Accordion(label='# Version 0.3 - Released on 25/07/2024', open=False):
                     with gr.Group():
                         with gr.Accordion(label='# Version 0.3.3 - 25/07/2024', open=True):
+                            gr.Markdown("- General - Less clutter in console")
                             gr.Markdown("- General - Code Clean Ups")
                         with gr.Accordion(label='# Version 0.3.2 - 25/07/2024', open=False):
                             gr.Markdown("- General - Updated Gradio to 4.39.0")
