@@ -26,8 +26,8 @@ This Repository is a work for my Engineering Degree. A paper on it will be writt
 
 | ![Screenshot4](https://github.com/user-attachments/assets/e55a966d-2fdf-4fb2-91d9-272f953f62f9) | ![Screenshot3](https://github.com/user-attachments/assets/c2632ef7-97e1-41b4-9ee8-f32db6c21977) |
 |-------------------------------------|-------------------------------------|
-| ![Screenshot2](https://github.com/user-attachments/assets/1323947d-9b37-4728-8ce1-9dd96df40ce8)  | ![Screenshot1](https://github.com/user-attachments/assets/9d5de04a-8b75-4739-8a37-50231cc8e8f9) |
-| ![preview6](https://github.com/user-attachments/assets/25d604e8-3f93-4bbc-824d-1e553232a7cf) | ![preview5](https://github.com/user-attachments/assets/26f98fb2-3c8d-4c27-bb44-9ed63cc6f3e1) |
+| ![Screenshot2](https://github.com/user-attachments/assets/a8f36a0e-1917-4a1c-9859-cf2c5e032b4d)  | ![Screenshot1](https://github.com/user-attachments/assets/9d5de04a-8b75-4739-8a37-50231cc8e8f9) |
+| ![preview6](https://github.com/user-attachments/assets/f585a42e-70f7-4e3a-8fd4-1a9cbdd39eab) | ![preview5](https://github.com/user-attachments/assets/26f98fb2-3c8d-4c27-bb44-9ed63cc6f3e1) |
 
 
 ## Installation
